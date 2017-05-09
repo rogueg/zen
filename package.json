@@ -19,6 +19,8 @@
   "dependencies": {
     "chai": "^3.5.0",
     "chrome-remote-interface": "^0.22.0",
-    "lighthouse": "^1.6.5"
+    "connect": "^3.6.1",
+    "lighthouse": "^1.6.5",
+    "serve-static": "^1.12.2"
   }
 }
