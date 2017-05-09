@@ -1,0 +1,23 @@
+{
+  "name": "zen",
+  "version": "0.1.0",
+  "description": "Testing Zen",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogueg/zen.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rogueg/zen/issues"
+  },
+  "homepage": "https://github.com/rogueg/zen#readme",
+  "dependencies": {
+    "chai": "^3.5.0",
+    "lighthouse": "^1.6.5"
+  }
+}
