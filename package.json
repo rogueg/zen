@@ -4,7 +4,8 @@
   "description": "Testing Zen",
   "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "example": "(cd example && node ../lib/index.js zen.js)",
+    "test": "echo \"Ironic: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -22,7 +23,8 @@
     "lighthouse": "^1.6.5",
     "serve-static": "^1.12.2"
   },
-  "optionalDependencies": {
+  "devDependencies": {
+    "chai": "^3.5.0",
     "webpack": "^2.5.1",
     "webpack-dev-server": "^2.4.5"
   }
