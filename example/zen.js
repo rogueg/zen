@@ -8,11 +8,17 @@ module.exports = {
   ],
 
   webpack: {
-    entry: './tests.js',
+    entry: [
+      './tests.js',
+      'webpack/hot/dev-server',
+      'webpack-dev-server/client?http://localhost:3101',
+    ],
     output: {
       path: path.resolve(__dirname, 'build'),
-      filename: 'bundle.js'
+      filename: 'bundle.js',
+      publicPath: 'http://localhost:3101/'
     },
-    plugins: []
+    plugins: [],
+    devtool: 'eval' // eval is recommended, because the source updates in chrome devtools
   }
 }
