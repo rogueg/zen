@@ -19,6 +19,6 @@ module.exports = {
       publicPath: 'http://localhost:3101/'
     },
     plugins: [],
-    devtool: 'eval' // eval is recommended, because the source updates in chrome devtools
+    // devtool: 'eval' // eval is recommended, because the source updates in chrome devtools
   }
 }

@@ -1,4 +1,6 @@
 require('./second')
+// window.Promise = require('bluebird')
+// Promise.config({longStackTraces: true})
 
 window.expect = chai.expect
 
