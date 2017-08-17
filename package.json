@@ -4,7 +4,7 @@
   "description": "Testing Zen",
   "main": "lib/index.js",
   "scripts": {
-    "example": "(cd example && node ../lib/index.js zen.js)",
+    "example": "(cd example && node --inspect ../lib/index.js zen.js)",
     "test": "echo \"Ironic: no test specified\" && exit 1"
   },
   "repository": {
@@ -21,7 +21,9 @@
     "chrome-remote-interface": "^0.22.0",
     "connect": "^3.6.1",
     "lighthouse": "^1.6.5",
-    "serve-static": "^1.12.2"
+    "serve-static": "^1.12.2",
+    "svelte": "^1.30.0",
+    "ws": "^3.1.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",

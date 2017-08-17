@@ -1,0 +1,81 @@
+<div class='mini'>
+  {{results.length}}/{{totalCount}}
+  {{#each fails as f}}
+    <a href={{testUrl(f)}} on:click='fastChange(event)' class='fail'>{{f.fullName}}</a>
+  {{/each}}
+  {{#if fails.length > 0}}
+    <button on:click='fastChange()'>&gt;</button>
+  {{/if}}
+</div>
+
+<style>
+  .mini {
+    position: fixed;
+    top: 0; width: 300px; left: 50%;
+    margin-left: -150px;
+    padding: 10px;
+    border: 1px solid #ddd;
+  }
+
+  .fail {
+    color: maroon;
+    font: 10px;
+  }
+</style>
+
+<script>
+  function oncreate() {
+    this.ws = new WebSocket(`ws://${location.host}/head`)
+    this.ws.onmessage = (msg) => {
+      let data = JSON.parse(msg.data)
+      this.set({results: this.get('results').concat(data.results)})
+    }
+    this.ws.onopen = this.run.bind(this)
+    window.onpopstate = this.run.bind(this)
+  }
+
+  function run() {
+    let params = new URLSearchParams(location.search)
+    let grep = params.get('grep') && new RegExp(params.get('grep'), 'i')
+    let focus = params.get('focus') && new RegExp(params.get('focus'), 'i')
+    let tests = Latte.flatten().filter(t => !grep || grep.test(t.fullName))
+
+    this.testsByName = {}
+    tests.forEach(t => this.testsByName[t.fullName] = t)
+
+    // tell workers what to do
+    this.ws.send(JSON.stringify({grep: params.get('grep') || ''}))
+
+    if (focus) { // if we're focused, run those tests
+      let focused = tests.filter(t => focus.test(t.fullName))
+      Latte.run({mode: 'debug', tests})
+    }
+
+    this.set({results: [], totalCount: tests.length})
+  }
+
+  // handle link clicks without reloading
+  function fastChange(event) {
+    history.pushState({}, 'Zen', event.target.getAttribute('href'))
+    event.preventDefault()
+    this.run()
+  }
+
+  function testUrl(result) {
+    let sp = new URLSearchParams(location.search)
+    sp.set('focus', result.fullName)
+    return '?' + sp.toString()
+  }
+
+  export default {
+    data: () => ({results: [], totalCount: 0}),
+    oncreate,
+
+    computed: {
+      fails: results => results.filter(t => t.error)
+    },
+
+    helpers: {testUrl},
+    methods: {fastChange, run}
+  }
+</script>
