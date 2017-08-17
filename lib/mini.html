@@ -6,6 +6,7 @@
   {{#if fails.length > 0}}
     <button on:click='fastChange()'>&gt;</button>
   {{/if}}
+  <button on:click='run()'>R</button>
 </div>
 
 <style>
@@ -44,7 +45,7 @@
     tests.forEach(t => this.testsByName[t.fullName] = t)
 
     // tell workers what to do
-    this.ws.send(JSON.stringify({grep: params.get('grep') || ''}))
+    this.ws.send(JSON.stringify({grep: params.get('grep') || '', force: true}))
 
     if (focus) { // if we're focused, run those tests
       let focused = tests.filter(t => focus.test(t.fullName))

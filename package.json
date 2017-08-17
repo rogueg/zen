@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/rogueg/zen#readme",
   "dependencies": {
-    "chrome-remote-interface": "^0.22.0",
+    "chrome-remote-interface": "^0.24.4",
     "connect": "^3.6.1",
     "lighthouse": "^1.6.5",
     "serve-static": "^1.12.2",
