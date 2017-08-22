@@ -8,11 +8,7 @@ module.exports = {
   ],
 
   webpack: {
-    entry: [
-      './tests.js',
-      'webpack/hot/dev-server',
-      'webpack-dev-server/client?http://localhost:3101',
-    ],
+    entry: './tests.js',
     output: {
       path: path.resolve(__dirname, 'build'),
       filename: 'bundle.js',

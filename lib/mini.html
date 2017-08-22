@@ -29,7 +29,12 @@
     this.ws = new WebSocket(`ws://${location.host}/head`)
     this.ws.onmessage = (msg) => {
       let data = JSON.parse(msg.data)
-      this.set({results: this.get('results').concat(data.results)})
+
+      if (data.results)
+        this.set({results: this.get('results').concat(data.results)})
+
+      if (data.codeHash && ZenWebpackClient.needsUpdate(data.codeHash))
+        this.updateCode(data.codeHash)
     }
     this.ws.onopen = this.run.bind(this)
     window.onpopstate = this.run.bind(this)
@@ -55,6 +60,19 @@
     this.set({results: [], totalCount: tests.length})
   }
 
+  async function updateCode(hash) {
+    this.mostRecentHash = hash
+    if (this.updating) return
+    this.updating = true
+
+    await Latte.abort()
+    while(ZenWebpackClient.needsUpdate(this.mostRecentHash))
+      await ZenWebpackClient.update()
+    this.updating = false
+
+    this.run()
+  }
+
   // handle link clicks without reloading
   function fastChange(event) {
     history.pushState({}, 'Zen', event.target.getAttribute('href'))
@@ -77,6 +95,6 @@
     },
 
     helpers: {testUrl},
-    methods: {fastChange, run}
+    methods: {fastChange, run, updateCode}
   }
 </script>
