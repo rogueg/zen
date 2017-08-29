@@ -6,7 +6,7 @@
   {{#if fails.length > 0}}
     <button on:click='fastChange()'>&gt;</button>
   {{/if}}
-  <button on:click='run()'>R</button>
+  <button on:click='run(true)'>R</button>
 </div>
 
 <style>
@@ -36,11 +36,11 @@
       if (data.codeHash && ZenWebpackClient.needsUpdate(data.codeHash))
         this.updateCode(data.codeHash)
     }
-    this.ws.onopen = this.run.bind(this)
-    window.onpopstate = this.run.bind(this)
+    this.ws.onopen = this.run.bind(this, false)
+    window.onpopstate = this.run.bind(this, false)
   }
 
-  function run() {
+  function run(force) {
     let params = new URLSearchParams(location.search)
     let grep = params.get('grep') && new RegExp(params.get('grep'), 'i')
     let focus = params.get('focus') && new RegExp(params.get('focus'), 'i')
@@ -50,7 +50,7 @@
     tests.forEach(t => this.testsByName[t.fullName] = t)
 
     // tell workers what to do
-    this.ws.send(JSON.stringify({grep: params.get('grep') || '', force: true}))
+    this.ws.send(JSON.stringify({grep: params.get('grep') || '', force}))
 
     if (focus) { // if we're focused, run those tests
       let focused = tests.filter(t => focus.test(t.fullName))
