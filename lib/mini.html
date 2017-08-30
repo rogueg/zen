@@ -3,6 +3,11 @@
   {{#each fails as f}}
     <a href={{testUrl(f)}} on:click='fastChange(event)' class='fail'>{{f.fullName}}</a>
   {{/each}}
+
+  {{#if focusFailure}}
+    <div class='focusFail'>{{focusFailure}}</div>
+  {{/if}}
+
   {{#if fails.length > 0}}
     <button on:click='fastChange()'>&gt;</button>
   {{/if}}
@@ -49,15 +54,15 @@
     this.testsByName = {}
     tests.forEach(t => this.testsByName[t.fullName] = t)
 
+    this.set({results: [], totalCount: tests.length, focusFailure: null})
+
     // tell workers what to do
     this.ws.send(JSON.stringify({grep: params.get('grep') || '', force}))
 
     if (focus) { // if we're focused, run those tests
       let focused = tests.filter(t => focus.test(t.fullName))
-      Latte.run({mode: 'debug', tests})
+      Latte.run({mode: 'debug', tests, onTimeout: onTimeout.bind(this), onTest: onTest.bind(this)})
     }
-
-    this.set({results: [], totalCount: tests.length})
   }
 
   async function updateCode(hash) {
@@ -75,6 +80,7 @@
 
   // handle link clicks without reloading
   function fastChange(event) {
+    // TODO: if no event
     history.pushState({}, 'Zen', event.target.getAttribute('href'))
     event.preventDefault()
     this.run()
@@ -86,8 +92,18 @@
     return '?' + sp.toString()
   }
 
+  function onTimeout(err) {
+    console.error('timeout', err)
+    this.set({focusFailure: `Timeout (see console)`})
+  }
+
+  function onTest(test, error) {
+    if (error)
+      this.set({focusFailure: error})
+  }
+
   export default {
-    data: () => ({results: [], totalCount: 0}),
+    data: () => ({results: [], totalCount: 0, focusFailure: null}),
     oncreate,
 
     computed: {
