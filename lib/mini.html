@@ -1,17 +1,20 @@
 <div class='mini'>
-  {{results.length}}/{{totalCount}}
-  {{#each fails as f}}
-    <a href={{testUrl(f)}} on:click='fastChange(event)' class='fail'>{{f.fullName}}</a>
-  {{/each}}
-
-  {{#if focusFailure}}
-    <div class='focusFail'>{{focusFailure}}</div>
-  {{/if}}
-
-  {{#if fails.length > 0}}
+  <div class='status'>
+    <span class='focusStatus'>f</span>
+    <span class='progress'>{{results.length}}/{{totalCount}}</span>
+    <span class='failureGroups'>x</span>
+    <span class='failCount'>0</span>
     <button on:click='fastChange()'>&gt;</button>
+    <button on:click='run(true)'>R</button>
+  </div>
+
+  {{#if selectedGroup}}
+  <div class='groupDetails'>
+    {{#each fails as f}}
+      <a href={{testUrl(f)}} on:click='fastChange(event)' class='fail'>{{f.fullName}}</a>
+    {{/each}}
+  </div>
   {{/if}}
-  <button on:click='run(true)'>R</button>
 </div>
 
 <style>
@@ -21,7 +24,13 @@
     margin-left: -150px;
     padding: 10px;
     border: 1px solid #ddd;
+    font-size: 10px;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
   }
+
+  .status { display: flex; }
+  .status > * { flex: 0; }
+  .failureGroups { flex: 1; }
 
   .fail {
     color: maroon;
@@ -31,6 +40,10 @@
 
 <script>
   function oncreate() {
+    Latte.mode = 'debug'
+    Latte.onTest = onTest.bind(this)
+    Latte.onTimeout = onTimeout.bind(this)
+
     this.ws = new WebSocket(`ws://${location.host}/head`)
     this.ws.onmessage = (msg) => {
       let data = JSON.parse(msg.data)
@@ -102,14 +115,20 @@
       this.set({focusFailure: error})
   }
 
+  function failureGroups(results) {
+    let groups = {}
+    results.forEach(t => {
+      if (!t.error) return
+      debugger
+      1
+    })
+    return Object.values(groups)
+  }
+
   export default {
-    data: () => ({results: [], totalCount: 0, focusFailure: null}),
     oncreate,
-
-    computed: {
-      fails: results => results.filter(t => t.error)
-    },
-
+    data: () => ({results: [], totalCount: 0, focusFailure: null}),
+    computed: {failureGroups: results => failureGroups(results)},
     helpers: {testUrl},
     methods: {fastChange, run, updateCode}
   }

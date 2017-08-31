@@ -6,7 +6,7 @@ module.hot.accept()
 
 describe('example', () => {
   // before callback that never resolves
-  // before(() => { return new Promise((r) => {}) })
+  before(() => { return new Promise((r) => {}) })
 
   before(() => { console.log('before example') })
   after(() => { console.log('after example') })
@@ -45,7 +45,7 @@ describe('example', () => {
   // })
 
   // it('has a promise that throws an error', function() {
-  //   let prm = new Promise(resolve => {
+  //   let prm = new Promise((resolve, rej) => {
   //     setTimeout(resolve, 10)
   //   })
   //   let ret = prm.then(() => { throw new Error('BANG') })
