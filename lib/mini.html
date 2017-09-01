@@ -57,10 +57,10 @@
     this.set({results: [], totalCount: tests.length, focusFailure: null})
 
     // tell workers what to do
-    this.ws.send(JSON.stringify({grep: params.get('grep') || '', force}))
+    this.ws.send(JSON.stringify({grep: params.get('grep') || '.', force}))
 
     if (focus) { // if we're focused, run those tests
-      let focused = tests.filter(t => focus.test(t.fullName))
+      tests = tests.filter(t => focus.test(t.fullName))
       Latte.run({mode: 'debug', tests, onTimeout: onTimeout.bind(this), onTest: onTest.bind(this)})
     }
   }
