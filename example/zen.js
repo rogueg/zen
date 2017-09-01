@@ -8,7 +8,7 @@ module.exports = {
   ],
 
   webpack: {
-    entry: './tests.js',
+    entry: ['./tests.js'],
     output: {
       path: path.resolve(__dirname, 'build'),
       filename: 'bundle.js',
