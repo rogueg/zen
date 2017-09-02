@@ -4,13 +4,12 @@ window.expect = chai.expect
 
 module.hot.accept()
 
-describe('example', () => {
-  // before callback that never resolves
-  // before(() => { return new Promise((r) => {}) })
+hangingPromise = () => new Promise(r => {})
 
-  before(() => { console.log('before example') })
+describe('example', () => {
+  before(() => { console.log('before example'); /* return hangingPromise() */ })
   after(() => { console.log('after example') })
-  beforeEach(() => console.log('beforeEach example'))
+  beforeEach(() => { console.log('beforeEach example'); /* return hangingPromise() */ })
   afterEach(() => console.log('afterEach example'))
 
   helper('echoBot', {
@@ -45,7 +44,7 @@ describe('example', () => {
   // })
 
   // it('has a promise that throws an error', function() {
-  //   let prm = new Promise(resolve => {
+  //   let prm = new Promise((resolve, rej) => {
   //     setTimeout(resolve, 10)
   //   })
   //   let ret = prm.then(() => { throw new Error('BANG') })

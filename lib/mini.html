@@ -31,6 +31,9 @@
 
 <script>
   function oncreate() {
+    Latte.mode = 'debug'
+    Latte.onTest = onTest.bind(this)
+
     this.ws = new WebSocket(`ws://${location.host}/head`)
     this.ws.onmessage = (msg) => {
       let data = JSON.parse(msg.data)
@@ -61,7 +64,7 @@
 
     if (focus) { // if we're focused, run those tests
       tests = tests.filter(t => focus.test(t.fullName))
-      Latte.run({mode: 'debug', tests, onTimeout: onTimeout.bind(this), onTest: onTest.bind(this)})
+      Latte.run(tests)
     }
   }
 
@@ -90,11 +93,6 @@
     let sp = new URLSearchParams(location.search)
     sp.set('focus', result.fullName)
     return '?' + sp.toString()
-  }
-
-  function onTimeout(err) {
-    console.error('timeout', err)
-    this.set({focusFailure: `Timeout (see console)`})
   }
 
   function onTest(test, error) {
