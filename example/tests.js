@@ -5,6 +5,7 @@ window.expect = chai.expect
 module.hot.accept()
 
 hangingPromise = () => new Promise(r => {})
+throwsError = () => { throw new Error('oops') }
 
 describe('example', () => {
   before(() => { console.log('before example'); /* return hangingPromise() */ })
@@ -37,6 +38,7 @@ describe('example', () => {
       expect(this.bark()).to.equal('woof')
     })
   })
+
   // it('doesnt timeout on breakpoints', () => {
   //   expect(1).to.equal(1)
   //   debugger

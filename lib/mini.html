@@ -1,17 +1,23 @@
 <div class='mini'>
-  {{results.length}}/{{totalCount}}
-  {{#each fails as f}}
-    <a href={{testUrl(f)}} on:click='fastChange(event)' class='fail'>{{f.fullName}}</a>
-  {{/each}}
-
-  {{#if focusFailure}}
-    <div class='focusFail'>{{focusFailure}}</div>
-  {{/if}}
-
-  {{#if fails.length > 0}}
+  <div class='status'>
+    <span class='focusStatus {{focusStatus}}'></span>
+    <span class='progress'>{{results.length}}/{{totalCount}}</span>
+    <span class='failureGroups'>
+      {{#each failureGroups as group}}
+        <span on:click='set({selectedGroup: group})' title={{group.key}}></span>
+      {{/each}}
+    </span>
     <button on:click='fastChange()'>&gt;</button>
+    <button on:click='run(true)'>R</button>
+  </div>
+
+  {{#if selectedGroup}}
+  <div class='groupDetails'>
+    {{#each selectedGroup as result}}
+      <a href={{testUrl(result)}} on:click='fastChange(event)' class='fail'>{{result.fullName}}</a>
+    {{/each}}
+  </div>
   {{/if}}
-  <button on:click='run(true)'>R</button>
 </div>
 
 <style>
@@ -19,11 +25,35 @@
     position: fixed;
     top: 0; width: 300px; left: 50%;
     margin-left: -150px;
-    padding: 10px;
+    padding: 10px 5px;
     border: 1px solid #ddd;
+    font-size: 10px;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
   }
 
-  .fail {
+  .status { display: flex; }
+  .status > * { margin: 0 3px; }
+  .failureGroups { flex: 1; }
+
+  .focusStatus {
+    flex: 0 0 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .focusStatus.none { display: none; }
+  .focusStatus.running { border: 1px solid #ddd; }
+  .focusStatus.passed { background-color: green; }
+
+  .failureGroups > span {
+    display: inline-block;
+    width: 1em; height: 1em;
+    border-radius: 50%;
+    background-color: maroon;
+    margin-right: 3px;
+    cursor: pointer;
+  }
+
+  .groupDetails > a {
+    display: block;
     color: maroon;
     font: 10px;
   }
@@ -57,14 +87,14 @@
     this.testsByName = {}
     tests.forEach(t => this.testsByName[t.fullName] = t)
 
-    this.set({results: [], totalCount: tests.length, focusFailure: null})
+    this.set({results: [], totalCount: tests.length, focusStatus: focus ? 'running' : 'none'})
 
     // tell workers what to do
     this.ws.send(JSON.stringify({grep: params.get('grep') || '.', force}))
 
     if (focus) { // if we're focused, run those tests
       tests = tests.filter(t => focus.test(t.fullName))
-      Latte.run(tests)
+      Latte.run(tests).then(() => this.set({focusStatus: 'passed'}))
     }
   }
 
@@ -83,9 +113,12 @@
 
   // handle link clicks without reloading
   function fastChange(event) {
-    // TODO: if no event
-    history.pushState({}, 'Zen', event.target.getAttribute('href'))
-    event.preventDefault()
+    let url = testUrl(this.get('failureGroups')[0][0])
+    if (event) {
+      url = event.target.getAttribute('href')
+      event.preventDefault()
+    }
+    history.pushState({}, 'Zen', url)
     this.run()
   }
 
@@ -100,14 +133,22 @@
       this.set({focusFailure: error})
   }
 
+  function failureGroups(results) {
+    let groups = {}
+    results.forEach(t => {
+      if (!t.error) return
+      let key = t.error.message + t.error.stack.split('\n')[1]
+      groups[key] = groups[key] || []
+      groups[key].key = key
+      groups[key].push(t)
+    })
+    return Object.values(groups)
+  }
+
   export default {
-    data: () => ({results: [], totalCount: 0, focusFailure: null}),
     oncreate,
-
-    computed: {
-      fails: results => results.filter(t => t.error)
-    },
-
+    data: () => ({results: [], totalCount: 0, focusStatus: 'none'}),
+    computed: {failureGroups: results => failureGroups(results)},
     helpers: {testUrl},
     methods: {fastChange, run, updateCode}
   }
