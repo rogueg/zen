@@ -61,7 +61,7 @@
 
 <script>
   function oncreate() {
-    Latte.mode = 'debug'
+    Latte.setup('debug')
     Latte.onTest = onTest.bind(this)
 
     this.ws = new WebSocket(`ws://${location.host}/head`)
