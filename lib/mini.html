@@ -7,12 +7,14 @@
         <span on:click='set({selectedGroup: group})' title={{group.key}}></span>
       {{/each}}
     </span>
+    <button on:click='run()'>^</button>
     <button on:click='fastChange()'>&gt;</button>
     <button on:click='run(true)'>R</button>
   </div>
 
   {{#if selectedGroup}}
   <div class='groupDetails'>
+    <div>{{selectedGroup.key}}</div>
     {{#each selectedGroup as result}}
       <a href={{testUrl(result)}} on:click='fastChange(event)' class='fail'>{{result.fullName}}</a>
     {{/each}}
@@ -22,14 +24,17 @@
 
 <style>
   .mini {
+    all: initial;
     position: fixed;
     top: 0; width: 300px; left: 50%;
     margin-left: -150px;
     padding: 10px 5px;
     border: 1px solid #ddd;
+    background: #fff;
     font-size: 10px;
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
   }
+  .mini * { all: unset; }
 
   .status { display: flex; }
   .status > * { margin: 0 3px; }
@@ -54,8 +59,9 @@
 
   .groupDetails > a {
     display: block;
+    margin-top: 5px;
     color: maroon;
-    font: 10px;
+    font-size: 10px;
   }
 </style>
 
@@ -90,7 +96,7 @@
     this.testsByName = {}
     tests.forEach(t => this.testsByName[t.fullName] = t)
 
-    this.set({results: [], totalCount: tests.length, focusStatus: focus ? 'running' : 'none'})
+    this.set({totalCount: tests.length, focusStatus: focus ? 'running' : 'none', selectedGroup: null})
 
     // tell workers what to do
     this.ws.send(JSON.stringify({grep: params.get('grep') || '.', force}))
