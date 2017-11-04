@@ -9,7 +9,7 @@
     </span>
     <button on:click='run()'>^</button>
     <button on:click='fastChange()'>&gt;</button>
-    <button on:click='run(true)'>R</button>
+    <button on:click='run(true, event)'>R</button>
   </div>
 
   {{#if selectedGroup}}
@@ -87,11 +87,12 @@
     window.onpopstate = this.run.bind(this, false)
   }
 
-  function run(force) {
+  function run(force, event) {
     let params = new URLSearchParams(location.search)
     let grep = params.get('grep') && new RegExp(params.get('grep'), 'i')
     let focus = params.get('focus') && new RegExp(params.get('focus'), 'i')
     let tests = Latte.flatten().filter(t => !grep || grep.test(t.fullName))
+    let reload = event.shiftKey
 
     this.testsByName = {}
     tests.forEach(t => this.testsByName[t.fullName] = t)
@@ -99,7 +100,7 @@
     this.set({totalCount: tests.length, focusStatus: focus ? 'running' : 'none', selectedGroup: null})
 
     // tell workers what to do
-    this.ws.send(JSON.stringify({grep: params.get('grep') || '.', force}))
+    this.ws.send(JSON.stringify({grep: params.get('grep') || '.', force, reload}))
 
     if (focus) { // if we're focused, run those tests
       tests = tests.filter(t => focus.test(t.fullName))
