@@ -9,7 +9,8 @@
     </span>
     <button on:click='run()'>^</button>
     <button on:click='fastChange()'>&gt;</button>
-    <button on:click='run(true, event)'>R</button>
+    <button on:click='run({force: true}, event)'>R</button>
+    <button on:click='run({fullRun: true}, event)'>F</button>
   </div>
 
   {{#if selectedGroup}}
@@ -75,7 +76,7 @@
       let data = JSON.parse(msg.data)
 
       if (data.runId && data.runId != this.get('runId'))
-        this.set({results: [], runId: data.runId})
+        this.set({results: [], runId: data.runId, totalCount: data.totalCount})
 
       if (data.results)
         this.set({results: this.get('results').concat(data.results)})
@@ -87,20 +88,19 @@
     window.onpopstate = this.run.bind(this, false)
   }
 
-  function run(force, event) {
+  function run(opts, event) {
     let params = new URLSearchParams(location.search)
     let grep = params.get('grep') && new RegExp(params.get('grep'), 'i')
     let focus = params.get('focus') && new RegExp(params.get('focus'), 'i')
     let tests = Latte.flatten().filter(t => !grep || grep.test(t.fullName))
-    let reload = event.shiftKey
+    let reload = event && event.shiftKey
 
-    this.testsByName = {}
-    tests.forEach(t => this.testsByName[t.fullName] = t)
-
-    this.set({totalCount: tests.length, focusStatus: focus ? 'running' : 'none', selectedGroup: null})
+    this.set({focusStatus: focus ? 'running' : 'none', selectedGroup: null})
 
     // tell workers what to do
-    this.ws.send(JSON.stringify({grep: params.get('grep') || '.', force, reload}))
+    let testNames = tests.map(t => t.fullName)
+    let request = Object.assign({grep: params.get('grep'), reload, testNames}, opts)
+    this.ws.send(JSON.stringify(request))
 
     if (focus) { // if we're focused, run those tests
       tests = tests.filter(t => focus.test(t.fullName))
