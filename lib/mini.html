@@ -34,6 +34,7 @@
     background: #fff;
     font-size: 10px;
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    z-index: 9999;
   }
   .mini * { all: unset; }
 
@@ -70,6 +71,8 @@
   function oncreate() {
     Latte.setup('debug')
     Latte.onTest = onTest.bind(this)
+    window.Zen = window.Zen || {}
+    Zen.mini = this
 
     this.ws = new WebSocket(`ws://${location.host}/head`)
     this.ws.onmessage = (msg) => {
