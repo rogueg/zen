@@ -94,12 +94,13 @@
     let focus = params.get('focus') && new RegExp(params.get('focus'), 'i')
     let tests = Latte.flatten().filter(t => !grep || grep.test(t.fullName))
     let reload = event && event.shiftKey
+    let singleWorker = event && event.altKey
 
     this.set({focusStatus: focus ? 'running' : 'none', selectedGroup: null})
 
     // tell workers what to do
     let testNames = tests.map(t => t.fullName)
-    let request = Object.assign({grep: params.get('grep'), reload, testNames}, opts)
+    let request = Object.assign({grep: params.get('grep'), reload, testNames, singleWorker}, opts)
     this.ws.send(JSON.stringify(request))
 
     if (focus) { // if we're focused, run those tests
