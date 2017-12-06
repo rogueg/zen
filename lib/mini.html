@@ -10,7 +10,7 @@
     <button on:click='run()'>^</button>
     <button on:click='fastChange()'>&gt;</button>
     <button on:click='run({force: true}, event)'>R</button>
-    <button on:click='run({fullRun: true}, event)'>F</button>
+    <button on:click='fullRun()'>F</button>
   </div>
 
   {{#if selectedGroup}}
@@ -112,6 +112,12 @@
     }
   }
 
+  function fullRun() {
+    let testNames = Latte.flatten().map(t => t.fullName)
+    this.ws.send(JSON.stringify({fullRun: true, testNames}))
+    history.pushState({}, 'Zen', '/')
+  }
+
   async function updateCode(hash) {
     this.mostRecentHash = hash
     if (this.updating) return
@@ -165,6 +171,6 @@
     data: () => ({results: [], totalCount: 0, focusStatus: 'none'}),
     computed: {failureGroups: results => failureGroups(results)},
     helpers: {testUrl},
-    methods: {fastChange, run, updateCode}
+    methods: {fastChange, fullRun, run, updateCode}
   }
 </script>
