@@ -1,16 +1,16 @@
 <div class='mini'>
   <div class='status'>
     <span class='focusStatus {{focusStatus}}'></span>
-    <span class='progress'>{{results.length}}/{{totalCount}}</span>
+    <span class='progress'>{{statusText({results, s3, totalCount, lambdaCount, fullRun})}}</span>
     <span class='failureGroups'>
       {{#each failureGroups as group}}
         <span on:click='set({selectedGroup: group})' title={{group.key}}></span>
       {{/each}}
     </span>
-    <button on:click='run()'>^</button>
-    <button on:click='fastChange()'>&gt;</button>
-    <button on:click='run({force: true}, event)'>R</button>
-    <button on:click='fullRun()'>F</button>
+    <button on:click='run()' title='Re-run the focused test'>^</button>
+    <button on:click='fastChange()' title='Jump to the next failing test'>&gt;</button>
+    <button on:click='run({force: true}, event)' title='Re-run the current grep'>R</button>
+    <button on:click='fullRun()' title='Run the full test suite'>F</button>
   </div>
 
   {{#if selectedGroup}}
@@ -37,6 +37,7 @@
     z-index: 9999;
   }
   .mini * { all: unset; }
+  .mini button { border: 1px solid #ddd; }
 
   .status { display: flex; }
   .status > * { margin: 0 3px; }
@@ -78,10 +79,10 @@
     this.ws.onmessage = (msg) => {
       let data = JSON.parse(msg.data)
 
-      if (data.runId && data.runId != this.get('runId'))
-        this.set({results: [], runId: data.runId, totalCount: data.totalCount})
+      if (data.runId)
+        this.set(data)
 
-      if (data.results)
+      else if (data.results)
         this.set({results: this.get('results').concat(data.results)})
 
       if (data.codeHash && ZenWebpackClient.needsUpdate(data.codeHash))
@@ -142,6 +143,22 @@
     this.run()
   }
 
+  function statusText(state) {
+    if (state.results && state.results.length)
+      return `${state.results.length}/${state.totalCount}`
+
+    if (state.lambdaCount)
+      return `Starting ${state.lambdaCount} workers`
+
+    if (state.s3 && state.s3.changed)
+      return `Uploading ${state.s3.uploaded}/${state.s3.changed}`
+
+    if (state.fullRun)
+      return `Checking file changes`
+
+    return ''
+  }
+
   function testUrl(result) {
     let sp = new URLSearchParams(location.search)
     sp.set('focus', result.fullName)
@@ -170,7 +187,7 @@
     oncreate,
     data: () => ({results: [], totalCount: 0, focusStatus: 'none'}),
     computed: {failureGroups: results => failureGroups(results)},
-    helpers: {testUrl},
+    helpers: {testUrl, statusText},
     methods: {fastChange, fullRun, run, updateCode}
   }
 </script>
