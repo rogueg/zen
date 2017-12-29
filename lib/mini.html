@@ -1,17 +1,21 @@
 <div class='mini'>
   <div class='status'>
     <span class='focusStatus {{focusStatus}}'></span>
-    <span class='progress'>{{statusText({results, s3, totalCount, lambdaCount, fullRun})}}</span>
+    <span class='progress'>{{statusText({results, compile, s3, totalCount, lambdaCount, fullRun})}}</span>
     <span class='failureGroups'>
       {{#each failureGroups as group}}
         <span on:click='set({selectedGroup: group})' title={{group.key}}></span>
       {{/each}}
     </span>
-    <button on:click='run()' title='Re-run the focused test'>^</button>
+    <button on:click='runFocused()' title='Re-run the focused test'>^</button>
     <button on:click='fastChange()' title='Jump to the next failing test'>&gt;</button>
-    <button on:click='run({force: true}, event)' title='Re-run the current grep'>R</button>
-    <button on:click='fullRun()' title='Run the full test suite'>F</button>
+    <button on:click='runRemote(event)' title='Re-run the current grep'>R</button>
+    <button on:click='runFull()' title='Run the full test suite'>F</button>
   </div>
+
+  {{#each compile.errors as error}}
+    <div class='compileError'>{{error}}</div>
+  {{/each}}
 
   {{#if selectedGroup}}
   <div class='groupDetails'>
@@ -76,60 +80,80 @@
     Zen.mini = this
 
     this.ws = new WebSocket(`ws://${location.host}/head`)
+    this.ws.onopen = this.runBoth.bind(this, false)
+    window.onpopstate = this.runBoth.bind(this, false)
+
     this.ws.onmessage = (msg) => {
       let data = JSON.parse(msg.data)
 
-      if (data.runId)
-        this.set(data)
+      if (data.results && !data.runId) // incremental update of results
+        return this.set({results: this.get('results').concat(data.results)})
 
-      else if (data.results)
-        this.set({results: this.get('results').concat(data.results)})
-
-      if (data.codeHash && ZenWebpackClient.needsUpdate(data.codeHash))
-        this.updateCode(data.codeHash)
+      // update our state from the server. If our code is out of date, update and re-run the focused test
+      this.set(data)
+      this.mostRecentHash = data.compile.hash
+      this.runIfOutOfDate()
     }
-    this.ws.onopen = this.run.bind(this, false)
-    window.onpopstate = this.run.bind(this, false)
   }
 
-  function run(opts, event) {
-    let params = new URLSearchParams(location.search)
-    let grep = params.get('grep') && new RegExp(params.get('grep'), 'i')
-    let focus = params.get('focus') && new RegExp(params.get('focus'), 'i')
-    let tests = Latte.flatten().filter(t => !grep || grep.test(t.fullName))
+  function runBoth() {
+    this.runFocused()
+    this.runRemote()
+  }
+
+  // run the focused test in this tab
+  function runFocused() {
+    let {grep, focus} = fromUrl()
+    this.set({focusStatus: focus ? 'running' : 'none'})
+    if (!focus) return
+    let tests = Latte.flatten().filter(t => (!grep || grep.test(t.fullName)) && focus.test(t.fullName))
+    Latte.run(tests).then(() => this.set({focusStatus: 'passed'}))
+  }
+
+  // runs the grepped tests against headless chrome workers
+  function runRemote(event) {
+    let {grep, focused} = fromUrl()
+    let testNames = Latte.flatten().filter(t => grep && grep.test(t.fullName)).map(t => t.fullName)
     let reload = event && event.shiftKey
-    let singleWorker = event && event.altKey
-
-    this.set({focusStatus: focus ? 'running' : 'none', selectedGroup: null})
-
-    // tell workers what to do
-    let testNames = tests.map(t => t.fullName)
-    let request = Object.assign({grep: params.get('grep'), reload, testNames, singleWorker}, opts)
-    this.ws.send(JSON.stringify(request))
-
-    if (focus) { // if we're focused, run those tests
-      tests = tests.filter(t => focus.test(t.fullName))
-      Latte.run(tests).then(() => this.set({focusStatus: 'passed'}))
-    }
+    this.ws.send(JSON.stringify({grep, reload, testNames}))
   }
 
-  function fullRun() {
+  // run all tests on lambda
+  function runFull() {
     let testNames = Latte.flatten().map(t => t.fullName)
     this.ws.send(JSON.stringify({fullRun: true, testNames}))
     history.pushState({}, 'Zen', '/')
   }
 
-  async function updateCode(hash) {
-    this.mostRecentHash = hash
-    if (this.updating) return
-    this.updating = true
+  async function runIfOutOfDate() {
+    let compile = this.get('compile')
+
+    if (this.get('updating')) return
+    if (compile.status == 'compiling') return
+
+    // HMR can't recover from compile errors. Once the build is good again, we need to reload
+    if (compile.status == 'error')
+      return this.set({compileHasFailed: true})
+
+    if (this.get('compileHasFailed')) // after recovering, we need to reload
+      return window.location.reload()
+
+    if (!ZenWebpackClient.needsUpdate(this.mostRecentHash)) return
+    this.set({updating: true})
 
     await Latte.abort()
-    while(ZenWebpackClient.needsUpdate(this.mostRecentHash))
+    while(window.ZenWebpackClient && ZenWebpackClient.needsUpdate(this.mostRecentHash))
       await ZenWebpackClient.update()
-    this.updating = false
+    this.set({updating: false})
 
-    this.run()
+    this.runFocused()
+  }
+
+  function fromUrl() {
+    let params = new URLSearchParams(location.search)
+    let grep = params.get('grep') && new RegExp(params.get('grep'), 'i')
+    let focus = params.get('focus') && new RegExp(params.get('focus'), 'i')
+    return {grep, focus}
   }
 
   // handle link clicks without reloading
@@ -140,21 +164,24 @@
       event.preventDefault()
     }
     history.pushState({}, 'Zen', url)
-    this.run()
+    this.runFocused()
   }
 
   function statusText(state) {
-    if (state.results && state.results.length)
-      return `${state.results.length}/${state.totalCount}`
+    if (state.compile.status == 'error')
+      return 'Compile error'
 
-    if (state.lambdaCount)
+    if (state.compile.status == 'compiling')
+      return 'Compiling'
+
+    if (state.lambdaCount && state.results.length == 0)
       return `Starting ${state.lambdaCount} workers`
 
-    if (state.s3 && state.s3.changed)
+    if (state.s3 && !state.s3.done && state.s3.changed)
       return `Uploading ${state.s3.uploaded}/${state.s3.changed}`
 
-    if (state.fullRun)
-      return `Checking file changes`
+    if (state.results)
+      return `${state.results.length}/${state.totalCount}`
 
     return ''
   }
@@ -170,7 +197,10 @@
       this.set({focusFailure: error})
   }
 
-  function failureGroups(results) {
+  function failureGroups(results, compile) {
+    if (compile.status != 'done')
+      return []
+
     let groups = {}
     results.forEach(t => {
       if (!t.error) return
@@ -185,9 +215,9 @@
 
   export default {
     oncreate,
-    data: () => ({results: [], totalCount: 0, focusStatus: 'none'}),
-    computed: {failureGroups: results => failureGroups(results)},
+    data: () => ({results: [], totalCount: 0, focusStatus: 'none', compile: {errors: []}}),
+    computed: {failureGroups: (results, compile) => failureGroups(results, compile)},
     helpers: {testUrl, statusText},
-    methods: {fastChange, fullRun, run, updateCode}
+    methods: {runBoth, runFocused, runRemote, fastChange, runFull, runIfOutOfDate}
   }
 </script>
