@@ -4,7 +4,7 @@
     <span class='progress'>{{statusText({results, compile, s3, totalCount, lambdaCount, fullRun})}}</span>
     <span class='failureGroups'>
       {{#each failureGroups as group}}
-        <span on:click='set({selectedGroup: group})' title={{group.key}}></span>
+        <span class='shade-{{group.shade}} {{group.active ? "active" : ""}}' on:click='set({selectedGroup: group})' title={{group.key}}></span>
       {{/each}}
     </span>
     <button on:click='runFocused()' title='Re-run the focused test'>^</button>
@@ -63,7 +63,20 @@
     margin-right: 3px;
     cursor: pointer;
   }
+  .failureGroups span.shade-1 { background-color: rgba(128, 0, 0, 0.3); }
+  .failureGroups span.shade-2 { background-color: rgba(128, 0, 0, 0.5); }
+  .failureGroups span.shade-3 { background-color: rgba(128, 0, 0, 0.7); }
+  .failureGroups span.shade-4 { background-color: rgba(128, 0, 0, 0.9); }
+  .failureGroups span.shade-5 { background-color: rgba(128, 0, 0, 1.0); }
 
+  .failureGroups span.active:before {
+    content: ''; width: 0; height: 0;
+    border-top: 5px solid #ddd;
+    border-left: 5px solid transparent;
+    border-right:5px solid transparent;
+  }
+
+  .groupDetails { display: block; margin-top: 5px; }
   .groupDetails > a {
     display: block;
     margin-top: 5px;
@@ -198,6 +211,8 @@
   }
 
   function failureGroups(results, compile) {
+    let {grep, focus} = fromUrl()
+
     if (compile.status != 'done')
       return []
 
@@ -210,7 +225,13 @@
       groups[key].key = key
       groups[key].push(t)
     })
-    return Object.values(groups)
+
+    return Object.values(groups).map(g => {
+      g.shade = Math.min(Math.floor(Math.sqrt(g.length)), 6)
+      g.active = !!g.find(r => focus && focus.test(r.fullName))
+      return g
+    })
+
   }
 
   export default {
