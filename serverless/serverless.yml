@@ -29,7 +29,6 @@ provider:
 package:
  include:
    - ../lib/chrome.js
-   - include-me-dir/**
 #  exclude:
 #    - exclude-me.js
 #    - exclude-me-dir/**

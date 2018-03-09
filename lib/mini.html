@@ -17,7 +17,7 @@
   <div class='groupDetails'>
     <div>{{$selectedGroup.key}}</div>
     {{#each $selectedGroup as result}}
-      <a href='javascript:void()' on:click='store.run({focus: result.fullName})' class='fail'>{{result.fullName}}</a>
+      <a href='javascript:void(0)' on:click='store.run({focus: result.fullName})' class='fail'>{{result.fullName}}</a>
     {{/each}}
   </div>
   {{/if}}

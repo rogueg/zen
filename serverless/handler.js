@@ -5,11 +5,12 @@ module.exports.workTests = (opts, context, callback) => {
   const launchChrome = require('@serverless-chrome/lambda')
   const ChromeWrapper = require('./chrome')
   let chrome, wrapper, tab
-  let remaining = opts.toRun.slice(), results = []
+  let remaining = opts.testNames.slice(), results = []
+  delete opts.testNames
 
   let runNext = function() {
     if (remaining.length == 0) return
-    let testOpts = Object.assign({}, opts, {toRun: remaining.pop()})
+    let testOpts = Object.assign({}, opts, {testName: remaining.pop()})
     return tab.assignTest(testOpts).then(r => {
       results.push(r)
       return runNext()
