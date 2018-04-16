@@ -11,7 +11,7 @@ module.exports.workTests = (opts, context, callback) => {
   let runNext = function() {
     if (remaining.length == 0) return
     let testOpts = Object.assign({}, opts, {testName: remaining.pop()})
-    return tab.assignTest(testOpts).then(r => {
+    return tab.setTest(testOpts).then(r => {
       results.push(r)
       return runNext()
     })
@@ -19,7 +19,7 @@ module.exports.workTests = (opts, context, callback) => {
 
   launchChrome({}).then(c => {
     chrome = c
-    wrapper = new ChromeWrapper()
+    wrapper = new ChromeWrapper({})
     wrapper.connectToRunning()
     return wrapper.openTab(opts.url)
   }).then(t => {
