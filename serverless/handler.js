@@ -3,14 +3,14 @@ const crypto = require('crypto')
 
 module.exports.workTests = (opts, context, callback) => {
   const launchChrome = require('@serverless-chrome/lambda')
-  const ChromeWrapper = require('./chrome')
+  const ChromeWrapper = require('./lib/chrome')
   let chrome, wrapper, tab
   let remaining = opts.testNames.slice(), results = []
   delete opts.testNames
 
   let runNext = function() {
     if (remaining.length == 0) return
-    let testOpts = Object.assign({}, opts, {testName: remaining.pop()})
+    let testOpts = Object.assign({}, opts, {testName: remaining.shift()})
     return tab.setTest(testOpts).then(r => {
       results.push(r)
       return runNext()

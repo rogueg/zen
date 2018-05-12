@@ -2,7 +2,7 @@ service: serverless-zen
 
 provider:
   name: aws
-  runtime: nodejs6.10
+  runtime: nodejs8.10
   region: us-west-2
 
 # you can add statements to the Lambda function's IAM Role here

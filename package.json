@@ -18,9 +18,9 @@
   },
   "homepage": "https://github.com/rogueg/zen#readme",
   "dependencies": {
-    "aws-sdk": "^2.153.0",
-    "chrome-launcher": "^0.6.0",
-    "chrome-remote-interface": "^0.24.5",
+    "aws-sdk": "^2.238.1",
+    "chrome-launcher": "^0.10.2",
+    "chrome-remote-interface": "^0.25.5",
     "connect": "^3.6.1",
     "diff-match-patch": "^1.0.0",
     "klaw": "^2.1.1",
@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "hard-source-webpack-plugin": "^0.4.11",
+    "serverless": "^1.27.1",
     "webpack": "^2.5.1",
     "webpack-dev-server": "^2.4.5"
   }
