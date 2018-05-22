@@ -96,7 +96,7 @@
     while (step = queue.pop()) {
       if (step.fullName)
         nodes.push({type: 'describe', title: step.fullName, depth: step.depth})
-      step.tests.forEach(t => nodes.push({type: 'test', title: t.fullName}))
+      step.tests.forEach(t => nodes.push({type: 'test', title: t.fullName, describe: step.fullName}))
       queue = queue.concat(step.children)
     }
 
@@ -165,7 +165,7 @@
     let sugg = this.get('suggestions')[idx]
     if (sugg.action) sugg.action()
     else if (sugg.type == 'describe') this.store.run({grep: sugg.title, focus: null})
-    else if (sugg.type == 'test') this.store.run({focus: sugg.title})
+    else if (sugg.type == 'test') this.store.run({grep: sugg.describe, focus: sugg.title})
     store.closeCommand()
   }
 
