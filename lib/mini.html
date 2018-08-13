@@ -1,84 +1,99 @@
 <div class='mini'>
-  <div class='status'>
-    <button class='focusStatus {{$focusStatus}}' on:click='store.run({focusOnly: true})' title='Run the focused test [alt-space]'></button>
-    <span class='progress'>{{$statusText}}</span>
-    <span class='failureGroups'>
-      {{#each $failureGroups as group}}
-        <span class='shade-{{group.shade}} {{group.active ? "active" : ""}}' on:click='store.set({selectedGroup: group})' title={{group.key}}></span>
-      {{/each}}
-    </span>
-  </div>
+  {#if statusText}
+    <div class='statusText'>{statusText}</div>
+  {:else}
+    <div class='runDetails'>
+      <div class='failureGroups'>
+        {#each $failureGroups.slice(0, 17) as group}
+          <span class='failureGroup shade-{group.shade} {group.containsFocus ? "containsFocus" : ""}' on:click='$focusGroup(group)' title={group.key}></span>
+        {/each}
+      </div>
+      <span class='progress'>{$results.length}/{$totalCount}</span>
+    </div>
 
-  {{#each $compile.errors as error}}
-    <div class='compileError'>{{error}}</div>
-  {{/each}}
+    {#if $focus}
+    <div class='focusDetails'>
+      <button class='focusStatus {$focusStatus}' on:click='$run({focusOnly: true})' title='Run the focused test [alt-space]'></button>
+      <span>{$focus}</span>
+    </div>
+    {/if}
 
-  {{#if $selectedGroup}}
-  <div class='groupDetails'>
-    <div>{{$selectedGroup.key}}</div>
-    {{#each $selectedGroup as result}}
-      <a href='javascript:void(0)' on:click='store.run({focus: result.fullName})' class='fail'>{{result.fullName}}</a>
-    {{/each}}
-  </div>
-  {{/if}}
+    {#if $groupForFocus}
+    <div class='groupDetails'>
+      <div class='error'>{$groupForFocus.key}</div>
+      {#if $groupForFocus == expandedGroup}
+        {#each $groupForFocus as result}
+          <a href='javascript:void(0)' on:click='$run({focus: result.fullName, batch: null})' class='fail'>{result.fullName}</a>
+        {/each}
+      {:elseif $groupForFocus.length > 1}
+        <a href='javascript:void(0)' on:click='set({expandedGroup: $groupForFocus})'>{$groupForFocus.length - 1} more</a>
+      {/if}
+    </div>
+    {/if}
+  {/if}
 </div>
 
 <style>
   .mini {
     all: initial;
     position: fixed;
-    top: 0; width: 300px; left: 50%;
+    bottom: 0; width: 300px; left: 50%;
     margin-left: -150px;
-    padding: 10px 5px;
+    padding: 8px 5px;
     border: 1px solid #ddd;
     background: #fff;
     font-size: 10px;
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
     z-index: 9999;
+    display: flex;
+    flex-direction: column-reverse;
   }
-  .mini * { all: unset; }
-  .mini button { border: 1px solid #ddd; }
 
-  .status { display: flex; }
-  .status > * { margin: 0 3px; }
-  .failureGroups { flex: 1; }
+  .mini > div { padding-top: 8px; }
+  .mini > div:last-child { padding-top: 0; }
 
+  .runDetails { display: flex; }
+  .runDetails .progress { margin-left: 5px; }
+  .runDetails .failureGroups { flex: 1; }
+
+  .failureGroup {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    margin-right: 3px;
+    cursor: pointer;
+    position: relative; /* for :after */
+  }
+  .failureGroup.shade-1 { background-color: rgba(128, 0, 0, 0.3); }
+  .failureGroup.shade-2 { background-color: rgba(128, 0, 0, 0.5); }
+  .failureGroup.shade-3 { background-color: rgba(128, 0, 0, 0.7); }
+  .failureGroup.shade-4 { background-color: rgba(128, 0, 0, 0.9); }
+  .failureGroup.shade-5 { background-color: rgba(128, 0, 0, 1.0); }
+
+  .failureGroup.containsFocus:after {
+    content: '';
+    width: 11px; height: 0;
+    border-top: 1px solid #8a6a6a;
+    display: block;
+    position: relative;
+    bottom: -13px;
+  }
+
+  .focusDetails { display: flex; }
   .focusStatus {
-    flex: 0 0 10px; height: 10px;
+    flex: 0 0 11px; height: 11px;
     border-radius: 50%;
     border: 1px solid #ddd;
+    margin-right: 5px;
   }
   .focusStatus.none { display: none; }
   .focusStatus.passed { background-color: green; }
 
-  .failureGroups > span {
-    display: inline-block;
-    width: 11px; height: 11px;
-    border-radius: 50%;
-    background-color: maroon;
-    margin-right: 3px;
-    cursor: pointer;
-  }
-  .failureGroups span.shade-1 { background-color: rgba(128, 0, 0, 0.3); }
-  .failureGroups span.shade-2 { background-color: rgba(128, 0, 0, 0.5); }
-  .failureGroups span.shade-3 { background-color: rgba(128, 0, 0, 0.7); }
-  .failureGroups span.shade-4 { background-color: rgba(128, 0, 0, 0.9); }
-  .failureGroups span.shade-5 { background-color: rgba(128, 0, 0, 1.0); }
-
-  .failureGroups span.active:before {
-    content: ''; width: 0; height: 0;
-    border-top: 5px solid #ddd;
-    border-left: 5px solid transparent;
-    border-right:5px solid transparent;
-    position: relative; top: -1px;
-  }
-
   .groupDetails {
-    display: block;
-    margin-top: 5px;
-    word-wrap: break-word;
+    /* word-wrap: break-word; */
+    padding-left: 16px;
   }
-  .groupDetails > a {
+  .groupDetails a {
     display: block;
     margin-top: 5px;
     color: maroon;
@@ -87,4 +102,23 @@
 </style>
 
 <script>
+export default {
+  computed: {
+    statusText: function statusText({$results, $compile, $s3, $totalCount, $lambdaCount}) {
+      if ($compile.status == 'error')
+        return 'Compile error ' + compile.errors.join(' ')
+
+      if ($compile.status == 'compiling')
+        return 'Compiling'
+
+      if ($lambdaCount && $results.length == 0)
+        return `Starting ${$lambdaCount} workers`
+
+      if ($s3 && !$s3.done && $s3.changed)
+        return `Uploading ${$s3.uploaded}/${$s3.changed}`
+
+      return ''
+    }
+  }
+}
 </script>
