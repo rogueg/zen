@@ -1,5 +1,5 @@
 <div class='ZenCommand'>
-  <input bind:value='input' ref:prompt on:blur='store.closeCommand()' on:keydown='onKeyDown(event)' on:input='setSelected(0)' />
+  <input bind:value='input' ref:prompt on:blur='$closeCommand()' on:keydown='onKeyDown(event)' on:input='setSelected(0)' />
   <div ref:list class='suggestions'>
     {#each suggestions as suggestion, index}
       <div class="{index == selectedIndex ? 'selected' : ''}" title={altText(suggestion)} on:mousedown='takeAction(index)'>
