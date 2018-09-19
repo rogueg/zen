@@ -34,7 +34,7 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "serverless": "^1.27.1",
-    "webpack": "^2.5.1",
-    "webpack-dev-server": "^2.4.5"
+    "webpack": "^4",
+    "webpack-dev-server": "^3.1"
   }
 }
