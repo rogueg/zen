@@ -37,8 +37,8 @@
   .mini {
     all: initial;
     position: fixed;
-    bottom: 0; width: 300px; left: 50%;
-    margin-left: -150px;
+    bottom: 0; width: 400px; left: 50%;
+    margin-left: -200px;
     padding: 8px 5px;
     border: 1px solid #ddd;
     background: #fff;
@@ -47,6 +47,7 @@
     z-index: 9999;
     display: flex;
     flex-direction: column-reverse;
+    overflow: hidden;
   }
 
   .mini > div { padding-top: 8px; }
@@ -104,7 +105,10 @@
 <script>
 export default {
   computed: {
-    statusText: function statusText({$results, $compile, $s3, $totalCount, $lambdaCount}) {
+    statusText: function statusText({$socketDisconnected, $results, $compile, $s3, $totalCount, $lambdaCount}) {
+      if  ($socketDisconnected)
+        return 'Disconnected (check server and reload)'
+
       if ($compile.status == 'error')
         return 'Compile error ' + compile.errors.join(' ')
 
