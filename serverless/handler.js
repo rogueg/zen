@@ -12,17 +12,21 @@ module.exports.workTests = (opts, context, callback) => {
     if (remaining.length == 0) return
     let testOpts = Object.assign({}, opts, {testName: remaining.shift()})
     return tab.setTest(testOpts).then(r => {
+      r.logStream = context.logStreamName
       results.push(r)
       return runNext()
     })
   }
 
+  console.log('Launching chrome')
   launchChrome({}).then(c => {
     chrome = c
     wrapper = new ChromeWrapper({})
     wrapper.connectToRunning()
+    console.log('Opening tab')
     return wrapper.openTab(opts.url)
   }).then(t => {
+    console.log('Starting tests')
     tab = t
     return runNext()
   }).then(() => {
