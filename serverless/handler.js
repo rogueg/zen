@@ -34,7 +34,11 @@ module.exports.workTests = (opts, context, callback) => {
     chrome.kill()
   }).catch(e => {
     console.error(e)
+    e.logStream = context.logStreamName
     callback(e)
+  }).then(() => {
+    // https://github.com/adieuadieu/serverless-chrome/issues/41#issuecomment-317989508
+    tab && tab.disconnect()
   })
 }
 
