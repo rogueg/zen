@@ -5,7 +5,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@serverless-chrome/lambda": "^1.0.0-29",
+    "@serverless-chrome/lambda": "^1.0.0-55",
     "chrome-launcher": "^0.6.0",
     "chrome-remote-interface": "^0.24.5",
     "diff-match-patch": "^1.0.0"
