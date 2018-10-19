@@ -39,6 +39,7 @@ module.exports.workTests = (opts, context, callback) => {
   }).then(() => {
     // https://github.com/adieuadieu/serverless-chrome/issues/41#issuecomment-317989508
     tab && tab.disconnect()
+    chrome.kill()
   })
 }
 
