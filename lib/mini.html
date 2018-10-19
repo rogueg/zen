@@ -110,7 +110,7 @@ export default {
         return 'Disconnected (check server and reload)'
 
       if ($compile.status == 'error')
-        return 'Compile error ' + compile.errors.join(' ')
+        return 'Compile error ' + $compile.errors.join(' ')
 
       if ($compile.status == 'compiling')
         return 'Compiling'
