@@ -1,36 +1,58 @@
 <div class='mini'>
-  {#if statusText}
-    <div class='statusText'>{statusText}</div>
-  {:else}
-    <div class='runDetails'>
-      <div class='failureGroups'>
-        {#each $failureGroups.slice(0, 17) as group}
-          <span class='failureGroup shade-{group.shade} {group.containsFocus ? "containsFocus" : ""}' on:click='$focusGroup(group)' title={group.key}></span>
-        {/each}
-      </div>
-      <span class='progress'>{$results.length}/{$totalCount}</span>
-    </div>
+  <div class='runDetails'>
+    {#if $socketDisconnected}
+      Disconnected (check server and reload)
+    {:elseif $workingSetLength}
+      <span class='grep' title='{ $grep ? "Running only tests that match" : "Running all tests"}'>
+        {@html $grep ? $icons.Filter : $icons.Asterisk}
+        {$grep || 'All tests'}
+      </span>
+    {:else}
+      Press alt to get started :)
+    {/if}
 
-    {#if $focus}
-    <div class='focusDetails'>
+    {#if $workingSetLength}
+      <span class='progress' title='{$lambdaCount ? `Running on ${$lambdaCount} lambda workers` : "Running locally on headless Chrome"}'>
+        {$results.length}/{$workingSetLength}
+        {@html $lambdaCount ? $icons.Lambda : $icons.Desktop}
+      </span>
+    {/if}
+  </div>
+
+  <div class='failureGroups'>
+    {#if $s3 && !$s3.done && $s3.changed}
+      Uploading {$s3.uploaded}/{$s3.changed} to S3
+    {:elseif $lambdaCount && $results.length == 0}
+      Starting {$lambdaCount} Lambda workers
+    {/if}
+    {#each $failureGroups.slice(0, 17) as group}
+      <span class='failureGroup shade-{group.shade} {group.containsFocus ? "containsFocus" : ""}' on:click='$focusGroup(group)'
+        title={group.key}></span>
+    {/each}
+  </div>
+
+  <div class='groupDetails'>
+    {($groupForFocus.error || '')}
+    {#if $groupForFocus == expandedGroup}
+      {#each $groupForFocus as result}
+        <a href='javascript:void(0)' on:click='$run({focus: result.fullName, batch: null})' class='fail'>{result.fullName}</a>
+      {/each}
+    {:elseif $groupForFocus.length > 1}
+      <a href='javascript:void(0)' on:click='set({expandedGroup: $groupForFocus})'>{$groupForFocus.length - 1} other tests failed with the same error</a>
+    {/if}
+  </div>
+
+  <div class='focusDetails'>
+    {@html $icons.Magnify}
+    {#if $compile.status == 'error'}
+      Compile error {$compile.errors.join(' ')}
+    {:elseif $compile.status == 'compiling'}
+      Compiling {$compile.progress || 0}% - {$compile.message}
+    {:elseif $focus}
       <button class='focusStatus {$focusStatus}' on:click='$run({focusOnly: true})' title='Run the focused test [alt-space]'></button>
-      <span>{$focus}</span>
-    </div>
+      <span>{$focus || ''}</span>
     {/if}
-
-    {#if $groupForFocus}
-    <div class='groupDetails'>
-      <div class='error'>{$groupForFocus.key}</div>
-      {#if $groupForFocus == expandedGroup}
-        {#each $groupForFocus as result}
-          <a href='javascript:void(0)' on:click='$run({focus: result.fullName, batch: null})' class='fail'>{result.fullName}</a>
-        {/each}
-      {:elseif $groupForFocus.length > 1}
-        <a href='javascript:void(0)' on:click='set({expandedGroup: $groupForFocus})'>{$groupForFocus.length - 1} more</a>
-      {/if}
-    </div>
-    {/if}
-  {/if}
+  </div>
 </div>
 
 <style>
@@ -39,23 +61,30 @@
     position: fixed;
     bottom: 0; width: 400px; left: 50%;
     margin-left: -200px;
-    padding: 8px 5px;
+    padding: 8px 5px 4px 5px;
     border: 1px solid #ddd;
     background: #fff;
-    font-size: 10px;
+    font-size: 12px;
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
     z-index: 9999;
-    display: flex;
-    flex-direction: column-reverse;
     overflow: hidden;
   }
 
-  .mini > div { padding-top: 8px; }
-  .mini > div:last-child { padding-top: 0; }
+  .mini > div { min-height: 16px; padding-bottom: 4px; }
+  /* .mini > div:last-child { padding-top: 0; } */
+  .mini :global(svg) {
+    width: 14px; height: 14px;
+    position: relative;
+    top: 2px;
+  }
+  .mini :global(svg path) { fill: #434353; }
 
-  .runDetails { display: flex; }
-  .runDetails .progress { margin-left: 5px; }
-  .runDetails .failureGroups { flex: 1; }
+  .runDetails { display: flex; justify-content: space-between; }
+  .runDetails .grep { flex: 1; }
+  .runDetails .grep :global(svg) {
+    margin-right: 2px;
+    fill: #777;
+  }
 
   .failureGroup {
     display: inline-block;
@@ -80,7 +109,12 @@
     bottom: -13px;
   }
 
-  .focusDetails { display: flex; }
+  .focusDetails {
+    display: flex;
+    border-top: 1px solid #eee;
+    margin-top: 4px;
+    padding-top: 8px;
+  }
   .focusStatus {
     flex: 0 0 11px; height: 11px;
     border-radius: 50%;
@@ -90,10 +124,7 @@
   .focusStatus.none { display: none; }
   .focusStatus.passed { background-color: green; }
 
-  .groupDetails {
-    /* word-wrap: break-word; */
-    padding-left: 16px;
-  }
+  .groupDetails {}
   .groupDetails a {
     display: block;
     margin-top: 5px;
@@ -104,25 +135,6 @@
 
 <script>
 export default {
-  computed: {
-    statusText: function statusText({$socketDisconnected, $results, $compile, $s3, $totalCount, $lambdaCount}) {
-      if  ($socketDisconnected)
-        return 'Disconnected (check server and reload)'
-
-      if ($compile.status == 'error')
-        return 'Compile error ' + $compile.errors.join(' ')
-
-      if ($compile.status == 'compiling')
-        return 'Compiling'
-
-      if ($lambdaCount && $results.length == 0)
-        return `Starting ${$lambdaCount} workers`
-
-      if ($s3 && !$s3.done && $s3.changed)
-        return `Uploading ${$s3.uploaded}/${$s3.changed}`
-
-      return ''
-    }
-  }
+  computed: {}
 }
 </script>
