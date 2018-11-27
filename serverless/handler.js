@@ -30,16 +30,13 @@ module.exports.workTests = (opts, context, callback) => {
     tab = t
     return runNext()
   }).then(() => {
+    chrome.kill() // Do this before callback. If we do it after, chrome doesn't always shut down
     callback(null, {statusCode: 200, body: results})
-    chrome.kill()
   }).catch(e => {
     console.error(e)
     e.logStream = context.logStreamName
+    chrome && chrome.kill()
     callback(e)
-  }).then(() => {
-    // https://github.com/adieuadieu/serverless-chrome/issues/41#issuecomment-317989508
-    tab && tab.disconnect()
-    chrome.kill()
   })
 }
 
