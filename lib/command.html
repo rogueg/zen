@@ -19,7 +19,6 @@
 
 <style>
   .ZenCommand {
-    all: unset;
     line-height: 1.5em;
 
     width: 80%;
@@ -36,12 +35,16 @@
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
   }
 
+  /* avoid any css rules from  */
+  :global(.ZenCommand *:not(path)) { all: initial; }
+
   input {
     display: inline-block;
+    box-sizing: border-box;
     width: 100%;
     border: none;
     background: none;
-    padding: 14px 30px 10px 50px;
+    padding: 14px 30px 10px 60px;
     border-bottom: 1px solid #313131;
     color: inherit;
     font-size: inherit;
@@ -64,8 +67,8 @@
     border: 1px solid #ddd;
     border-radius: 50%;
     padding: 5px;
-    height: 24px;
-    flex: 0 0 24px;
+    height: 20px;
+    flex: 0 0 20px;
     margin-right: 14px;
   }
 
@@ -82,10 +85,10 @@
   .keys > span {
     font-size: 10px;
     display: inline-block;
-    padding: 1px 4px;
+    padding: 1px 5px;
     border: 1px solid #aaa;
     border-radius: 1px;
-    margin-left: 3px;
+    margin-left: 5px;
   }
 </style>
 
