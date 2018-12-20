@@ -47,7 +47,7 @@
     {#if $compile.status == 'error'}
       Compile error {$compile.errors.join(' ')}
     {:elseif $compile.status == 'compiling'}
-      Compiling {$compile.progress || 0}% - {$compile.message}
+      Compiling {$compile.percentage || 0}% - {$compile.message}
     {:elseif $focus}
       <button class='focusStatus {$focusStatus}' on:click='$run({focusOnly: true})' title='Run the focused test [alt-space]'></button>
       <span>{$focus || ''}</span>
