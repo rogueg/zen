@@ -18,6 +18,9 @@
 </div>
 
 <style>
+  /* avoid any css rules from  */
+  :global(.ZenCommand *:not(path)) { all: unset; }
+
   .ZenCommand {
     line-height: 1.5em;
 
@@ -34,9 +37,6 @@
     font-size: 12px;
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
   }
-
-  /* avoid any css rules from  */
-  :global(.ZenCommand *:not(path)) { all: initial; }
 
   input {
     display: inline-block;
