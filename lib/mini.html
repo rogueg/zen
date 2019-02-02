@@ -26,7 +26,7 @@
       Starting {$lambdaCount} Lambda workers
     {/if}
     {#each $failureGroups.slice(0, 17) as group}
-      <span class='failureGroup shade-{group.shade} {group.containsFocus ? "containsFocus" : ""}' on:click='$focusGroup(group)'
+      <span class='{groupClasses(group)}' on:click='$focusGroup(group)'
         title={group.key}></span>
     {/each}
     {#if $results.length > 0 && $failureGroups.length == 0 && $results.length == $workingSetLength}
@@ -102,6 +102,7 @@
   .failureGroup.shade-3 { background-color: rgba(128, 0, 0, 0.7); }
   .failureGroup.shade-4 { background-color: rgba(128, 0, 0, 0.9); }
   .failureGroup.shade-5 { background-color: rgba(128, 0, 0, 1.0); }
+  .failureGroup.passedFocus { background-color: green; }
 
   .failureGroup.containsFocus:after {
     content: '';
@@ -139,7 +140,16 @@
 </style>
 
 <script>
-export default {
-  computed: {}
-}
+  function groupClasses (g) {
+    let s = 'failureGroup'
+    if (g.containsFocus) s = s + ' containsFocus'
+    if (g.passedFocus && g.length === 1) s = s + ' passedFocus'
+    else s = s + ` shade-${g.shade}`
+    return s
+  }
+
+  export default {
+    computed: {},
+    helpers: {groupClasses}
+  }
 </script>
