@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-labelledby="title"
 aria-describedby="desc" role="img" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <title>Indicator Right</title>
+  <title>Indicator Left</title>
   <desc>A solid styled icon from Orion Icon Library.</desc>
   <path data-name="layer1"
-  d="M38.879 47.121l13.993-13.993.012-.012L55 31 38.879 14.879a3 3 0 0 0-4.242 4.242l8.879 8.88H13.999a3 3 0 0 0 0 6h29.515l-8.877 8.878a3 3 0 0 0 4.242 4.242z"
-  ></path>
+  d="M25.121 47.121L11.128 33.128l-.012-.012L9 31l16.121-16.121a3 3 0 0 1 4.242 4.242l-8.879 8.88h29.517a3 3 0 1 1 0 6H20.486l8.877 8.878a3 3 0 0 1-4.242 4.242z"></path>
 </svg>

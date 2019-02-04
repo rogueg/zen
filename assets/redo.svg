@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-labelledby="title"
+aria-describedby="desc" role="img" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Undo</title>
+  <desc>A solid styled icon from Orion Icon Library.</desc>
+  <path data-name="layer1"
+  d="M36 10a25.67 25.67 0 0 0-25.445 20.538l-3.129-4.303-4.852 3.53 9.764 13.425 13.427-9.764-3.53-4.852-5.985 4.353A19.736 19.736 0 0 1 36 16a19.787 19.787 0 0 1 20 20 20.847 20.847 0 0 1-5.971 14.66l4.245 4.24A26.886 26.886 0 0 0 62 36a25.724 25.724 0 0 0-26-26z"
+  ></path>
+</svg>
