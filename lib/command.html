@@ -93,7 +93,8 @@
 </style>
 
 <script>
-  function oncreate() {
+  // The set of tests or commands has changed. Do as much work up front to make opening command and typing fast.
+  function prepareSearch() {
     let queue = [Latte.root], step
     let nodes = Array.from(Zen.commands)
     while (step = queue.pop()) {
@@ -103,7 +104,11 @@
       queue = queue.concat(step.children)
     }
 
-    this.set({nodes})
+    nodes.forEach(n => { n.prep = Zen.Fuzzysort.prepare(n.title) })
+    this.searchNodes = nodes
+  }
+
+  function oncreate() {
     this.refs.prompt.focus()
   }
 
@@ -151,97 +156,26 @@
     if (node.type == 'test') return 'Run this test in this tab'
   }
 
-  function suggestions(input='', nodes=[]) {
+  function suggestions(input='') {
     let priorityMap = {command: 0, describe: 1, test: 2}
 
-    let sorted = nodes.map((node, idx) => {
-      let score = input ? commandScore(node.title, input, node.title.toLowerCase(), input.toLowerCase(), 0, 0) : 0
-      let priority = priorityMap[node.type]
-      return {node, score, idx, priority}
-    }).sort((a, b) => {
-      if (a.score !== b.score) return b.score - a.score
-      if (a.priority !== b.priority) return a.priority - b.priority
-      if (a.node.depth && b.node.depth && a.node.depth !== b.node.depth) return a.node.depth - b.node.depth
-      return a.idx - b.idx
-    })
+    let sorted = Zen.Fuzzysort.go(input, Zen.Command.searchNodes, {limit: 50, keys: ['prep'], allowTypo: true})
+    // TODO: we might want to give a boost to commands, and a slightly smaller one to describe blocks
+    // * It might also be helpful to promote recently focused/grepped things
 
-    return sorted.slice(0, 50).map(tuple => tuple.node)
-  }
-
-  let SCORE_CONTINUE_MATCH = 1,
-    SCORE_SPACE_WORD_JUMP = 0.9,
-    SCORE_NON_SPACE_WORD_JUMP = 0.8,
-    SCORE_CHARACTER_JUMP = 0.3,
-    SCORE_TRANSPOSITION = 0.1,
-    PENALTY_SKIPPED = 0.999,
-    PENALTY_CASE_MISMATCH = 0.9999,
-    PENALTY_DISTANCE_FROM_START = 0.9,
-    PENALTY_NOT_COMPLETE = 0.99
-
-  const IS_GAP_REGEXP = /[\\\/\-_+.#"@\[\(\{&]/,
-    COUNT_GAPS_REGEXP = /[\\\/\-_+.#"@\[\(\{&]/g,
-    IS_SPACE_REGEXP = /\s/,
-    COUNT_SPACE_REGEXP = /\s/g
-
-  function commandScore(string, abbreviation, lowerString, lowerAbbreviation, stringIndex=0, abbreviationIndex=0) {
-    if (abbreviationIndex === abbreviation.length) {
-      if (stringIndex === string.length) return SCORE_CONTINUE_MATCH
-      return PENALTY_NOT_COMPLETE
+    if (input) {
+      return sorted.slice(0, 50).map(tuple => tuple.obj)
+    } else {
+      return Zen.Command.searchNodes.slice(0, 50)
     }
-
-    let abbreviationChar = lowerAbbreviation.charAt(abbreviationIndex)
-    let index = lowerString.indexOf(abbreviationChar, stringIndex)
-    let highScore = 0
-    let score, transposedScore, wordBreaks, spaceBreaks
-
-    while (index >= 0) {
-      score = commandScore(string, abbreviation, lowerString, lowerAbbreviation, index + 1, abbreviationIndex + 1);
-      if (score > highScore) {
-        if (index === stringIndex) {
-          score *= SCORE_CONTINUE_MATCH
-        } else if (IS_GAP_REGEXP.test(string.charAt(index - 1))) {
-          score *= SCORE_NON_SPACE_WORD_JUMP
-          wordBreaks = string.slice(stringIndex, index - 1).match(COUNT_GAPS_REGEXP)
-          if (wordBreaks && stringIndex > 0) {
-            score *= Math.pow(PENALTY_SKIPPED, wordBreaks.length)
-          }
-        } else if (IS_SPACE_REGEXP.test(string.charAt(index - 1))) {
-          score *= SCORE_SPACE_WORD_JUMP
-          spaceBreaks = string.slice(stringIndex, index - 1).match(COUNT_SPACE_REGEXP)
-          if (spaceBreaks && stringIndex > 0) {
-            score *= Math.pow(PENALTY_SKIPPED, spaceBreaks.length)
-          }
-        } else {
-          score *= SCORE_CHARACTER_JUMP
-          if (stringIndex > 0) {
-            score *= Math.pow(PENALTY_SKIPPED, index - stringIndex)
-          }
-        }
-
-        if (string.charAt(index) !== abbreviation.charAt(abbreviationIndex))
-          score *= PENALTY_CASE_MISMATCH
-      }
-
-      if (SCORE_TRANSPOSITION > score && lowerString.charAt(index - 1) === lowerAbbreviation.charAt(abbreviationIndex + 1) && lowerString.charAt(index - 1) !== lowerAbbreviation.charAt(abbreviationIndex)) {
-        transposedScore = commandScore(string, abbreviation, lowerString, lowerAbbreviation, index + 1, abbreviationIndex + 2)
-
-        if (transposedScore * SCORE_TRANSPOSITION > score)
-          score = transposedScore * SCORE_TRANSPOSITION
-      }
-
-      if (score > highScore)
-        highScore = score
-      index = lowerString.indexOf(abbreviationChar, index + 1)
-    }
-
-    return highScore;
   }
 
   export default {
+    setup: Command => { Command.prepareSearch = prepareSearch },
     oncreate,
-    data: () => ({input: '', selectedIndex: 0, nodes: []}),
+    data: () => ({input: '', selectedIndex: 0}),
     methods: {onKeyDown, setSelected, takeAction},
     helpers: {icon, altText},
-    computed: {suggestions: ({input, nodes}) => suggestions(input, nodes)}
+    computed: {suggestions: ({input}) => suggestions(input)}
   }
 </script>

@@ -23,6 +23,7 @@
     "chrome-remote-interface": "^0.25.5",
     "connect": "^3.6.1",
     "diff-match-patch": "^1.0.0",
+    "fuzzysort": "^1.1.4",
     "klaw": "^2.1.1",
     "mime-types": "^2.1.17",
     "serve-static": "^1.12.2",
