@@ -1,43 +1,37 @@
 const AWS = require('aws-sdk')
 const crypto = require('crypto')
 
-module.exports.workTests = (opts, context, callback) => {
+module.exports.workTests = async (opts, context) => {
   const launchChrome = require('@serverless-chrome/lambda')
   const ChromeWrapper = require('./lib/chrome')
-  let chrome, wrapper, tab
-  let remaining = opts.testNames.slice(), results = []
+  let chrome, remaining = opts.testNames.slice(), results = []
   delete opts.testNames
 
-  let runNext = function() {
-    if (remaining.length == 0) return
-    let testOpts = Object.assign({}, opts, {testName: remaining.shift()})
-    return tab.setTest(testOpts).then(r => {
-      r.logStream = context.logStreamName
-      results.push(r)
-      return runNext()
-    })
-  }
-
-  console.log('Launching chrome')
-  launchChrome({}).then(c => {
-    chrome = c
-    wrapper = new ChromeWrapper({})
+  try {
+    console.log('Launching chrome')
+    chrome = await launchChrome({})
+    let wrapper = new ChromeWrapper({})
     wrapper.connectToRunning()
     console.log('Opening tab')
-    return wrapper.openTab(opts.url)
-  }).then(t => {
+    let tab = await wrapper.openTab(opts.url)
+
     console.log('Starting tests')
-    tab = t
-    return runNext()
-  }).then(() => {
-    chrome.kill() // Do this before callback. If we do it after, chrome doesn't always shut down
-    callback(null, {statusCode: 200, body: results})
-  }).catch(e => {
+    while (remaining.length > 0) {
+      let testOpts = Object.assign({}, opts, {testName: remaining.shift()})
+      let r = await tab.setTest(testOpts)
+      r.logStream = context.logStreamName
+      results.push(r)
+    }
+
+    chrome.kill()
+    return {statusCode: 200, body: results}
+
+  } catch (e) {
     console.error(e)
     e.logStream = context.logStreamName
     chrome && chrome.kill()
-    callback(e)
-  })
+    throw e
+  }
 }
 
 
