@@ -6,9 +6,10 @@
   "license": "MIT",
   "dependencies": {
     "@serverless-chrome/lambda": "^1.0.0-55",
+    "btoa": "^1.2.1",
     "chrome-launcher": "^0.6.0",
-    "chrome-remote-interface": "^0.24.5",
-    "diff-match-patch": "^1.0.0"
+    "chrome-remote-interface": "^0.27.1",
+    "performance-now": "^2.1.0"
   },
   "devDependencies": {
     "serverless": "^1.24.1",

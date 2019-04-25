@@ -20,8 +20,8 @@
   </div>
 
   <div class='failureGroups'>
-    {#if $s3 && !$s3.done && $s3.changed}
-      Uploading {$s3.uploaded}/{$s3.changed} to S3
+    {#if $s3 && !$s3.done}
+      {s3StatusText($s3)}
     {:elseif $lambdaCount && $results.length == 0}
       Starting {$lambdaCount} Lambda workers
     {/if}
@@ -144,8 +144,14 @@
     return s
   }
 
+  function s3StatusText (s3) {
+    if (!s3.readFromDisk) return 'Finding changes on disk'
+    if (!s3.synced) return 'Syncing with S3'
+    return `Uploading ${s3.uploaded}/${s3.changed} to S3`
+  }
+
   export default {
     computed: {},
-    helpers: {groupClasses}
+    helpers: {groupClasses, s3StatusText}
   }
 </script>

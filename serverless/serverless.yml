@@ -47,6 +47,16 @@ functions:
     timeout: 30
     handler: handler.applyPatch
 
+  sync:
+    memorySize: 1024
+    timeout: 30
+    handler: handler.sync
+
+  routeRequest:
+    memorySize: 256
+    timeout: 20
+    handler: handler.routeRequest
+
   # fanOut:
   #   memorySize: 256
   #   timeout: 30

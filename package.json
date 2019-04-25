@@ -19,16 +19,18 @@
   "homepage": "https://github.com/rogueg/zen#readme",
   "dependencies": {
     "aws-sdk": "^2.238.1",
+    "btoa": "^1.2.1",
     "chrome-launcher": "^0.10.2",
-    "chrome-remote-interface": "^0.25.5",
+    "chrome-remote-interface": "^0.27.1",
     "connect": "^3.6.1",
-    "diff-match-patch": "^1.0.0",
     "fuzzysort": "^1.1.4",
     "klaw": "^2.1.1",
     "mime-types": "^2.1.17",
+    "node-fetch": "^2.3.0",
     "serve-static": "^1.12.2",
     "sugar": "^2.0.4",
     "svelte": "^2.10.1",
+    "uuid": "^3.3.2",
     "ws": "^3.1.0"
   },
   "devDependencies": {
