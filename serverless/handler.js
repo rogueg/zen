@@ -1,26 +1,25 @@
 const AWS = require('aws-sdk')
 
 module.exports.workTests = async (opts, context, callback) => {
-  const launchChrome = require('@serverless-chrome/lambda')
   const ChromeWrapper = require('./lib/chrome')
-  let chrome, manifest, remaining = opts.testNames.slice(), results = []
+  let wrapper, manifest, remaining = opts.testNames.slice(), results = []
   delete opts.testNames
 
   try {
     console.log('Starting')
+    wrapper = new ChromeWrapper({})
+
     await Promise.all([
-      launchChrome({}).then(c => chrome = c),
+      wrapper.launchLambda(),
       getManifest(opts.Bucket, opts.sessionId).then(m => manifest = m)
     ])
 
     console.log('Opening tab')
-    let wrapper = new ChromeWrapper({})
-    wrapper.connectToRunning()
     let tab = await wrapper.openTab(opts.url)
+    tab.manifest = manifest
 
-    if (opts.sessionId) { // temp to handle old clients
-      if (!manifest) throw new Error(`Missing manifest for ${opts.sessionId}`)
-      tab.manifest = manifest
+    if (opts.sessionId && !manifest) { // temp to handle old clients
+      throw new Error(`Missing manifest for ${opts.sessionId}`)
     }
 
     console.log('Starting tests')
@@ -31,14 +30,15 @@ module.exports.workTests = async (opts, context, callback) => {
       results.push(r)
     }
 
-    chrome.kill()
     callback(null, {statusCode: 200, body: results})
 
   } catch (e) {
     console.error(e)
     e.logStream = context.logStreamName
-    chrome && chrome.kill()
     callback(e)
+
+  } finally {
+    if (wrapper) wrapper.kill()
   }
 }
 
