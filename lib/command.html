@@ -185,7 +185,7 @@
     setup: Command => { Command.prepareSearch = prepareSearch },
     oncreate,
     data: () => ({input: '', selectedIndex: 0}),
-    methods: {onKeyDown, setSelected, takeAction},
+    methods: {onKeyDown, setSelected, takeAction, _isUpKey, _isDownKey, _isEscapeKey},
     helpers: {icon, altText},
     computed: {suggestions: ({input}) => suggestions(input)}
   }
