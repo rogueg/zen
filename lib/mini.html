@@ -12,23 +12,24 @@
     {/if}
 
     {#if $workingSetLength}
-      <span class='progress' title='{$lambdaCount ? `Running on ${$lambdaCount} lambda workers` : "Running locally on headless Chrome"}'>
+      <span class='progress' title='{$isLambda ? `Running on ${$workerCount} lambda workers` : "Running locally on headless Chrome"}'>
         {$results.length}/{$workingSetLength}
-        {@html $lambdaCount ? $icons.Lambda : $icons.Desktop}
+        {@html $isLambda ? $icons.Lambda : $icons.Desktop}
       </span>
     {/if}
   </div>
 
   <div class='failureGroups'>
-    {#if $s3 && !$s3.done}
-      {s3StatusText($s3)}
-    {:elseif $lambdaCount && $results.length == 0}
-      Starting {$lambdaCount} Lambda workers
+    {#if $results.length > 0}
+      {#each $failureGroups.slice(0, 17) as group}
+        <span class='{groupClasses(group)}' on:click='$focusGroup(group)'
+          title={group.key}></span>
+      {/each}
+    {:elseif $workerCount}
+      Starting {$workerCount} ${isLambda ? 'Lambda' : 'local'} workers
+    {:elseif $s3}
+      {$s3}
     {/if}
-    {#each $failureGroups.slice(0, 17) as group}
-      <span class='{groupClasses(group)}' on:click='$focusGroup(group)'
-        title={group.key}></span>
-    {/each}
   </div>
 
   <div class='groupDetails'>
@@ -144,14 +145,8 @@
     return s
   }
 
-  function s3StatusText (s3) {
-    if (!s3.readFromDisk) return 'Finding changes on disk'
-    if (!s3.synced) return 'Syncing with S3'
-    return `Uploading ${s3.uploaded}/${s3.changed} to S3`
-  }
-
   export default {
     computed: {},
-    helpers: {groupClasses, s3StatusText}
+    helpers: {groupClasses}
   }
 </script>
