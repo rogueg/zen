@@ -114,11 +114,11 @@
 
   function onKeyDown(event) {
     event.stopPropagation()
-    if (this._isUpKey(event))
+    if (_isUpKey(event))
       this.setSelected(this.get().selectedIndex - 1)
-    else if (this._isDownKey(event))
+    else if (_isDownKey(event))
       this.setSelected(this.get().selectedIndex + 1)
-    else if (this._isEscapeKey(event))
+    else if (_isEscapeKey(event))
       store.closeCommand()
     else if (event.keyCode == 13) // enter
       this.takeAction(this.get().selectedIndex)
@@ -185,7 +185,7 @@
     setup: Command => { Command.prepareSearch = prepareSearch },
     oncreate,
     data: () => ({input: '', selectedIndex: 0}),
-    methods: {onKeyDown, setSelected, takeAction, _isUpKey, _isDownKey, _isEscapeKey},
+    methods: {onKeyDown, setSelected, takeAction},
     helpers: {icon, altText},
     computed: {suggestions: ({input}) => suggestions(input)}
   }
