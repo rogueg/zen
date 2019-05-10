@@ -1,7 +1,7 @@
 {
-  "name": "zen",
+  "name": "@rogueg/zen",
   "version": "0.1.0",
-  "description": "Testing Zen",
+  "description": "Karma replacement that runs your tests in seconds",
   "main": "lib/index.js",
   "scripts": {
     "example": "(cd example && node --inspect ../lib/index.js zen.js)",
