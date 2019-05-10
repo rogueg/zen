@@ -26,7 +26,7 @@
           title={group.key}></span>
       {/each}
     {:elseif $workerCount}
-      Starting {$workerCount} ${isLambda ? 'Lambda' : 'local'} workers
+      Starting {$workerCount} {isLambda ? 'Lambda' : 'local'} workers
     {:elseif $s3}
       {$s3}
     {/if}
