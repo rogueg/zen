@@ -51,26 +51,8 @@ module.exports.sync = async (manifest) => {
     Body: JSON.stringify(manifest)
   }).promise()
 
-  // List out all the files we already have in S3
-  // let cached = [], listOpts = {}
-  // while (listOpts) {
-  //   console.log('Listing objects', listOpts)
-  //   let resp = await s3.listObjectsV2(listOpts).promise()
-  //   console.log('Got resp', resp)
-  //   cached.push.apply(cached, resp.Contents.map(c => c.Key))
-  //   listOpts.ContinuationToken = resp.NextContinuationToken
-  //   if (!resp.IsTruncated) listOpts = null
-  // }
-  // console.log(`Found ${cached.length} items in S3`)
-
-  // // Figure out which ones are specified in the manifest that we don't have
-  // let files = Object.keys(manifest.files).map(p => {
-  //   let key = manifest.files[p]
-  //   return {path: p, key, needed: cached.indexOf(key) === -1}
-  // })
-  // let needed = files.filter(f => f.needed)
-  // console.log(`Need ${needed.length} files to run tests`)
-
+  // TODO: it might be faster to use listObjectsV2, especially if there are many files
+  // to check, and S3 is pruned to have less than 2k files. Blame this comment for an example.
   let needed = []
   let toCheck = manifest.files.filter(f => f.toCheck)
   console.log(`Checking ${toCheck.length} files`)
