@@ -44,6 +44,13 @@ functions:
     layers:
       - arn:aws:lambda:us-west-2:977099002423:layer:chrome:15
 
+  listTests:
+    memorySize: 1536
+    timeout: 60
+    handler: handler.listTests
+    layers:
+      - arn:aws:lambda:us-west-2:977099002423:layer:chrome:15
+
   applyPatch:
     memorySize: 1024
     timeout: 30

@@ -42,6 +42,32 @@ module.exports.workTests = async (opts, context, callback) => {
   }
 }
 
+module.exports.listTests = async function (opts) {
+  const ChromeWrapper = require('./lib/chrome')
+  let wrapper
+  try {
+    wrapper = new ChromeWrapper({})
+    await Promise.all([
+      wrapper.launchLambda(),
+      getManifest(opts.Bucket, opts.sessionId).then(m => manifest = m)
+    ])
+
+    console.log('Opening tab')
+    let tab = await wrapper.openTab(opts.url)
+    tab.manifest = manifest
+
+    return await tab.getTestNames()
+
+  } catch (e) {
+    console.error(e)
+    e.logStream = context.logStreamName
+    callback(e)
+
+  } finally {
+    if (wrapper) wrapper.kill()
+  }
+}
+
 module.exports.sync = async (manifest) => {
   let s3 = new AWS.S3({params: {Bucket: manifest.bucket}})
 
