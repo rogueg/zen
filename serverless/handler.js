@@ -111,7 +111,7 @@ module.exports.routeRequest = async (event) => {
     return {statusCode: 200, headers: {"content-type": "text/html"}, body: manifest.index}
   }
 
-  let key = manifest.files[path]
+  let key = manifest.fileMap[path]
   if (!key) {
     return {statusCode: 404, headers: {}, body: 'path not found in manifest'}
   }
