@@ -2,7 +2,7 @@
   <div class='runDetails'>
     {#if $socketDisconnected}
       Disconnected (check server and reload)
-    {:elseif $workingSetLength}
+    {:elseif $workingSetLength || $grep}
       <span class='grep' title='{ $grep ? "Running only tests that match" : "Running all tests"}'>
         {@html $grep ? $icons.Filter : $icons.Asterisk}
         {$grep || 'All tests'}

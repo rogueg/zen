@@ -125,7 +125,7 @@
     else return
     event.preventDefault()
   }
-  
+
   function _isUpKey ({keyCode, key, metaKey, altKey, ctrlKey} = {}) {
     return keyCode == 38 || (!metaKey && !altKey && ctrlKey && ['p', 'k'].includes(key))
   }
@@ -133,7 +133,7 @@
   function _isDownKey ({keyCode, key, metaKey, altKey, ctrlKey} = {}) {
     return keyCode == 40 || (!metaKey && !altKey && ctrlKey && ['n', 'j'].includes(key))
   }
-  
+
   function _isEscapeKey ({keyCode, key, metaKey, altKey, ctrlKey} = {}) {
     return keyCode == 27 || (!metaKey && !altKey && ctrlKey && key == '[')
   }
@@ -141,8 +141,8 @@
   function takeAction(idx) {
     let sugg = this.get().suggestions[idx]
     if (sugg.action) sugg.action()
-    else if (sugg.type == 'describe') this.store.run({grep: sugg.title, focus: null})
-    else if (sugg.type == 'test') this.store.run({grep: sugg.describe, focus: sugg.title})
+    else if (sugg.type == 'describe') this.store.filterTests({grep: sugg.title, run: true})
+    else if (sugg.type == 'test') this.store.focusTest(sugg.title)
     store.closeCommand()
   }
 
