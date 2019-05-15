@@ -3,7 +3,7 @@ const AWS = require('aws-sdk')
 module.exports.workTests = async (opts, context, callback) => {
   const ChromeWrapper = require('./lib/chrome')
   let wrapper, manifest, remaining = opts.testNames.slice(), results = []
-  delete opts.testNames
+  const CUTOFF = Date.now() + (60 * 1000 - 10000) // 60s timeout with a 10s buffer
 
   try {
     console.log('Starting')
@@ -22,14 +22,32 @@ module.exports.workTests = async (opts, context, callback) => {
       throw new Error(`Missing manifest for ${opts.sessionId}`)
     }
 
+    // Run all tests once, collecting results
     console.log('Starting tests')
     while (remaining.length > 0) {
       let testOpts = Object.assign({}, opts, {testName: remaining.shift()})
       let r = await tab.setTest(testOpts)
-      r.logStream = context.logStreamName
       results.push(r)
     }
 
+    // Optionally deflake tests that failed. Attempt all failing tests the same number of times
+    // until we run out of time on this lambda worker, or reach our deflake limit.
+    // To maximize our chances, we'll reload the tab before each attempt.
+    let hasTimeRemaining = true, attempts = 1
+    while (opts.deflakeLimit && attempts < opts.deflakeLimit && hasTimeRemaining && results.find(r => r.error)) {
+      attempts++
+      for (let previousResult of results.filter(r => r.error)) {
+        hasTimeRemaining = Date.now() + previousResult.time * 1.2 < CUTOFF
+        if (!hasTimeRemaining) break
+
+        tab.reload()
+        let r = await tab.setTest(Object.assign({}, opts, {testName: previousResult.fullName}))
+        r.attempts = attempts
+        results.splice(results.indexOf(previousResult), 1, r) // replace previous result
+      }
+    }
+
+    results.forEach(r => r.logStream = context.logStreamName)
     callback(null, {statusCode: 200, body: results})
 
   } catch (e) {
