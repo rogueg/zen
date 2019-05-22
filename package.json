@@ -40,6 +40,6 @@
     "chai": "^3.5.0",
     "serverless": "^1.27.1",
     "webpack": "^4",
-    "webpack-dev-server": "^3.1"
+    "webpack-dev-server": "^3.4"
   }
 }

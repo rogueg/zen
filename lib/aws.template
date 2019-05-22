@@ -1,0 +1,230 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  # Bucket that contains Lambda function code, and js required by tests
+  AssetBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: 'index.html'
+
+  # Allow public reads from the bucket, so lambda workers can load code.
+  # Prevent listing so someone can't easily peruse the code
+  AssetBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AssetBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: ['s3:GetObject']
+            Resource:
+              - !Join
+                - '/'
+                - - !GetAtt ['AssetBucket', 'Arn']
+                  - '*'
+
+  # Lambda workers can only write to logs and S3
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: zen-lambda-role
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ['lambda.amazonaws.com']
+            Action: ['sts:AssumeRole']
+
+  # All users authenticate as this user. Not having to deal with credentials makes it easier to get started
+  SharedUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: zen-shared-user
+
+  SharedAccessKey:
+    Type: AWS::IAM::AccessKey
+    DependsOn: SharedUser
+    Properties:
+      UserName: zen-shared-user
+
+  LambdaPolicy:
+    Type: AWS::IAM::Policy
+    DependsOn: [LambdaRole, SharedUser]
+    Properties:
+      PolicyName: ZenLambdaWorker
+      Roles: [zen-lambda-role]
+      Users: [zen-shared-user]
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: 'logs:CreateLogStream'
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/zen-workTests:*'
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/zen-listTests:*'
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/zen-sync:*'
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/zen-routeRequest:*'
+          - Effect: Allow
+            Action: 'logs:PutLogEvents'
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/zen-workTests:*:*'
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/zen-listTests:*:*'
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/zen-sync:*:*'
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/zen-routeRequest:*:*'
+          - Effect: Allow
+            Action: ['s3:GetObject', 's3:ListBucket', 's3:PutObject', 's3:DeleteObject']
+            Resource:
+              - !GetAtt ['AssetBucket', 'Arn']
+              - !Join ['/', [!GetAtt [AssetBucket, Arn], '*']]
+          - Effect: Allow
+            Action: ['lambda:Invoke', 'lambda:InvokeAsync', 'lambda:InvokeFunction']
+            Resource:
+              - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:zen-*'
+
+  LogGroupWorkTests:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/zen-workTests
+      RetentionInDays: 1
+
+  LogGroupListTests:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/zen-listTests
+      RetentionInDays: 1
+
+  LogGroupSync:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/zen-sync
+      RetentionInDays: 1
+
+  LogGroupRouteRequest:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/zen-routeRequest
+      RetentionInDays: 1
+
+  WorkTests:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: zen-workTests
+      Handler: lambda.workTests
+      MemorySize: 1536
+      Role: !GetAtt ['LambdaRole', 'Arn']
+      Runtime: nodejs8.10
+      Timeout: 60
+      Layers:
+        - arn:aws:lambda:us-west-1:977179729379:layer:chrome:1
+      Environment:
+        Variables:
+          ASSET_BUCKET: !Ref AssetBucket
+          GATEWAY_URL: !Sub
+            - 'https://${apiId}.execute-api.${AWS::Region}.amazonaws.com/pub'
+            - apiId: !Ref GatewayApi
+      Code:
+        S3Bucket: !Ref AssetBucket
+        S3Key: 'lambda-code.zip'
+
+  ListTests:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: zen-listTests
+      Handler: lambda.listTests
+      MemorySize: 1536
+      Role: !GetAtt [LambdaRole, Arn]
+      Runtime: nodejs8.10
+      Timeout: 60
+      Layers:
+        - arn:aws:lambda:us-west-1:977179729379:layer:chrome:1
+      Environment:
+        Variables:
+          ASSET_BUCKET: !Ref AssetBucket
+          GATEWAY_URL: !Sub
+            - 'https://${apiId}.execute-api.${AWS::Region}.amazonaws.com/pub'
+            - apiId: !Ref GatewayApi
+      Code:
+        S3Bucket: !Ref AssetBucket
+        S3Key: 'lambda-code.zip'
+
+  Sync:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: zen-sync
+      Handler: lambda.sync
+      MemorySize: 1536
+      Role: !GetAtt [LambdaRole, Arn]
+      Runtime: nodejs8.10
+      Timeout: 60
+      Environment:
+        Variables:
+          ASSET_BUCKET: !Ref AssetBucket
+      Code:
+        S3Bucket: !Ref AssetBucket
+        S3Key: 'lambda-code.zip'
+
+  RouteRequest:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: zen-routeRequest
+      Handler: lambda.routeRequest
+      MemorySize: 1536
+      Role: !GetAtt [LambdaRole, Arn]
+      Runtime: nodejs8.10
+      Timeout: 60
+      Environment:
+        Variables:
+          ASSET_BUCKET: !Ref AssetBucket
+      Code:
+        S3Bucket: !Ref AssetBucket
+        S3Key: 'lambda-code.zip'
+
+  GatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: zen-gateway
+
+  GatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref GatewayApi
+      ParentId: !GetAtt ['GatewayApi', 'RootResourceId']
+      PathPart: '{proxy+}'
+
+  GatewayMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: RouteRequest
+    Properties:
+      HttpMethod: GET
+      AuthorizationType: None
+      RestApiId: !Ref GatewayApi
+      ResourceId: !Ref GatewayResource
+      Integration:
+        IntegrationHttpMethod: GET
+        Type: AWS_PROXY
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lArn}/invocations'
+          - lArn: !GetAtt [RouteRequest, Arn]
+
+  GatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: GatewayMethod
+    Properties:
+      RestApiId: !Ref GatewayApi
+      StageName: pub
+
+Outputs:
+  UserAccessKey:
+    Value: !Ref SharedAccessKey
+  UserSecretKey:
+    Value: !GetAtt [SharedAccessKey, SecretAccessKey]
+  BucketName:
+    Value: !Ref AssetBucket
+  BucketUrl:
+    Value: !GetAtt [AssetBucket, WebsiteURL]
+  GatewayUrl:
+    Value: !Sub
+      - 'https://${apiId}.execute-api.${AWS::Region}.amazonaws.com/pub'
+      - apiId: !Ref GatewayApi

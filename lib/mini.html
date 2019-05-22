@@ -25,10 +25,10 @@
         <span class='{groupClasses(group)}' on:click='$focusGroup(group)'
           title={group.key}></span>
       {/each}
-    {:elseif $workerCount}
-      Starting {$workerCount} {isLambda ? 'Lambda' : 'local'} workers
-    {:elseif $s3}
+    {:elseif $s3 && $s3 !== 'done'}
       {$s3}
+    {:elseif $workerCount}
+      Starting {$workerCount} {$isLambda ? 'Lambda' : 'local'} workers
     {/if}
   </div>
 
