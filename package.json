@@ -1,6 +1,6 @@
 {
   "name": "@rogueg/zen",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Karma replacement that runs your tests in seconds",
   "main": "lib/cli.js",
   "scripts": {
@@ -38,7 +38,6 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "serverless": "^1.27.1",
     "webpack": "^4",
     "webpack-dev-server": "^3.4"
   }
