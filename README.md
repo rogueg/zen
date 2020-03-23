@@ -12,7 +12,7 @@ This is a bit rough. Sorry! Hopefully soon I'll automate all this 😀
 #### Deploy S3 bucket
 We're going to put some build artifacts in this bucket before deploying the full stack.
 ```
-aws cloudformation deploy --stack-name zen --template-file node_modules/@rogueg/zen/lib/aws-bucket-only.template --capabilities CAPABILITY_NAMED_IAM
+aws cloudformation deploy --stack-name zen --template-file node_modules/@rogueg/zen/lib/aws/aws-bucket-only.template --capabilities CAPABILITY_NAMED_IAM
 ```
 
 #### Making Chrome Layer
@@ -23,15 +23,15 @@ You need a Lambda Layer that has a chromium binary. I've been using the excellen
 1. Create a zip file with just the decompressed chromium
 1. Upload to the bucket
 1. Use AWS's Lambda UI to create a layer from that zip
-1. Get the ARN for the layer, and put it in `node_modules/@rogueg/zen/lib/aws.template` (I told you this was rough)
+1. Get the ARN for the layer, and put it in `node_modules/@rogueg/zen/lib/aws/aws.template` (I told you this was rough)
 
 #### Make lambda code
-You'll also need a zip of `lib/chrome.js`, `lib/lambda.js`, and `chrome-remote-interface`. Upload it to the bucket as `lambda-code.zip`
+You'll also need a zip of `lib/local-server/chrome.js`, `lib/aws/lambda.js`, and `chrome-remote-interface`. Upload it to the bucket as `lambda-code.zip`
 
 #### Deploy stack
 This will deploy all the rest of the formation.
 ```
-aws cloudformation deploy --stack-name zen --template-file node_modules/@rogueg/zen/lib/aws.template --capabilities CAPABILITY_NAMED_IAM
+aws cloudformation deploy --stack-name zen --template-file node_modules/@rogueg/zen/lib/aws/aws.template --capabilities CAPABILITY_NAMED_IAM
 ```
 
 #### Config
