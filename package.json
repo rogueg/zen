@@ -6,7 +6,7 @@
   "scripts": {
     "example": "(cd example && node --inspect ../lib/index.js zen.js)",
     "test": "echo \"Ironic: no test specified\" && exit 1",
-    "test:ui": "./lib/cli.js",
+    "test:ui": "./lib/cli/cli.js",
     "bundle-fn": "(rm -f tmp/lambda-code.zip && cd tmp/lambda-code && zip -r ../lambda-code.zip *)",
     "bundle-layer": "(rm -f tmp/layer-chrome.zip && cd tmp/layer/ && zip -r ../layer-chrome.zip *)"
   },
