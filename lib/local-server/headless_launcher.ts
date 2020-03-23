@@ -1,6 +1,6 @@
-const { ChromeLauncher } = require("lighthouse/lighthouse-cli/chrome-launcher");
-const chrome = require("chrome-remote-interface");
-const path = require("path");
+import { ChromeLauncher } from "lighthouse/lighthouse-cli/chrome-launcher"
+import * as chrome from "chrome-remote-interface"
+import * as path from "path"
 
 /**
  * Launches a debugging instance of Chrome on port 9222.

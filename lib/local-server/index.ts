@@ -1,12 +1,29 @@
-const path = require('path')
-const http = require('http')
-const connect = require('connect')
-const WebSocket = require('ws')
-const Util = require('../util')
-const ChromeWrapper = require('./chrome')
+import * as path from 'path'
+import { createServer } from 'http'
+import * as connect from 'connect'
+import * as WebSocket from 'ws'
+import * as Util from '../util'
+import { ChromeWrapper } from './chrome'
+
+declare var global: any
+let Zen = global.Zen
 
 module.exports = class Server {
+  runId: number
+  head: any
+  workers: any
+  isLambda: boolean
+  workerCount: number
+  workingSet: any
+  results: any
+  passedFocus: any
+  grep: any
+  chrome: any
+
+
   constructor () {
+    Zen = global.Zen
+
     this.runId = 1
     this.head = null
     this.workers = Array.construct(8, id => ({id: id + 1}))
@@ -18,7 +35,7 @@ module.exports = class Server {
 
     // start up the local webserver for `head` to connect to
     let app = connect()
-    let server = http.createServer(app).listen(Zen.config.port)
+    let server = createServer(app).listen(Zen.config.port)
     app.use('/lib', Util.serveWith404(path.join(__dirname, '..'))) // serve up stuff out of lib
     app.use('/node_modules', Util.serveWith404(path.resolve(Zen.config.appRoot, './node_modules'))) // TODO: this doesn't work when yarn link'd
     app.use('/base', Util.serveWith404(Zen.config.appRoot)) // base serves things out of the application's root
@@ -27,7 +44,7 @@ module.exports = class Server {
 
     if (Zen.webpack) {
       Zen.webpack.startDevServer(app)
-      Zen.webpack.on('status', stats => {
+      Zen.webpack.on('status', _ => {
         if (Zen.webpack.status == 'done') {
           this.workers.forEach(w => w.tab && w.tab.setCodeHash(Zen.webpack.compile.hash))
         }
@@ -45,8 +62,8 @@ module.exports = class Server {
     this.workers = Array.construct(8, id => {
       id = id + 1
       let port = Zen.config.port + id
-      http.createServer(app).listen(port)
-      let worker = {id, port}
+      createServer(app).listen(port)
+      let worker = {id, port, tab: null}
       this.chrome.openTab(`http://localhost:${port}/worker?id=${id}`, `w${id}`, Zen.config)
         .then(t => worker.tab = t)
       return worker

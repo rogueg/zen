@@ -1,14 +1,22 @@
-const path = require('path')
-const webpack = require('webpack')
-const EventEmitter = require('events')
+import * as path from 'path'
+import * as webpack from 'webpack'
+import * as EventEmitter from 'events'
 
-module.exports = class WebpackAdapter extends EventEmitter {
+declare var global: any
+let Zen = global.Zen
+
+export class WebpackAdapter extends EventEmitter {
+  compiler: any
+  compile: any
+  status: any
+
   constructor () {
+    Zen = global.Zen
     super()
     let wcfg = Zen.config.webpack
     wcfg.entry.bundle.push(path.join(__dirname, '../client', 'webpack-client.js'))
     wcfg.plugins.push(new webpack.HotModuleReplacementPlugin())
-    wcfg.plugins.push(new webpack.ProgressPlugin((pct, message, addInfo) => {
+    wcfg.plugins.push(new webpack.ProgressPlugin((pct, message) => {
       if (pct > 0 && pct < 1)
         this.onStats({status: 'compiling', percentage: Math.round(pct * 100), message})
     }))

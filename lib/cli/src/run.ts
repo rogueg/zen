@@ -1,50 +1,37 @@
-#!/usr/bin/env node
+import { Zen, Util } from '../../client/index'
 
-// Normalize whether the cli is run directly or via node
-if (!process.argv[0].match(/zen$/)) process.argv.shift()
-
-require('../client/index')
-
-const cmd = process.argv[1] || 'run'
-if (cmd == 'server') {
-  const Server = require('../local-server')
-  new Server()
+function timeSince(t0: Date) {
+  return (new Date()).valueOf() - t0.valueOf()
 }
 
-if (cmd == 'run') {
-  run()
-}
+export async function run() {
 
-if (cmd == 'deploy') {
-  // TODO serverless deploy
-}
-
-async function run () {
   let t0 = new Date()
+
   if (Zen.webpack) {
     console.log('Webpack building')
     let previousPercentage = 0
-    Zen.webpack.on('status', (status, stats) => {
+    Zen.webpack.on('status', (_, stats) => {
       if (stats.percentage && stats.percentage > previousPercentage) {
         previousPercentage = stats.percentage
         console.log(`${stats.percentage}% ${stats.message}`)
       }
     })
     await Zen.webpack.build()
-    console.log(`Took ${new Date() - t0}ms`)
+    console.log(`Took ${timeSince(t0)}ms`)
   }
 
   t0 = new Date()
   console.log('Syncing to S3')
   Zen.s3Sync.on('status', msg => process.env.DEBUG && console.log(msg))
   await Zen.s3Sync.run(Zen.indexHtml('worker', true))
-  console.log(`Took ${new Date() - t0}ms`)
+  console.log(`Took ${timeSince(t0)}ms`)
 
   t0 = new Date()
   console.log('Getting test names')
-  let workingSet = await Util.invoke('zen-listTests', {sessionId: Zen.config.sessionId})
+  let workingSet = await Util.invoke('zen-listTests', { sessionId: Zen.config.sessionId })
   let groups = Zen.journal.groupTests(workingSet, Zen.config.lambdaConcurrency)
-  console.log(`Took ${new Date() - t0}ms`)
+  console.log(`Took ${timeSince(t0)}ms`)
 
   let failed = 0
   t0 = new Date()
@@ -58,7 +45,7 @@ async function run () {
       })
       response.forEach(r => {
         if (r.attempts > 1 && !r.error)
-          console.log(`⚠️ ${r.fullName} (flaked ${r.attempts-1}x)`)
+          console.log(`⚠️ ${r.fullName} (flaked ${r.attempts - 1}x)`)
         if (r.error) {
           failed++
           console.log(`🔴 ${r.fullName} ${r.error} (tried ${r.attempts || 1} times)`)
@@ -69,7 +56,7 @@ async function run () {
       failed += group.tests.length
     }
   }))
-  console.log(`Took ${new Date() - t0}ms`)
-  console.log(`${failed ? '😢' : '🎉'} ${failed} failed test${failed.length == 1 ? '' : 's'}`)
+  console.log(`Took ${timeSince(t0)}ms`)
+  console.log(`${failed ? '😢' : '🎉'} ${failed} failed test${failed == 1 ? '' : 's'}`)
   process.exit(failed ? 1 : 0)
 }

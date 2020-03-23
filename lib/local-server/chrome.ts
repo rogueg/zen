@@ -1,19 +1,28 @@
-const CDP = require('chrome-remote-interface')
-const path = require('path')
-const spawn = require('child_process').spawn
-const net = require('net')
-const fs = require('fs')
+import * as CDP from 'chrome-remote-interface'
+import * as path from 'path'
+import { spawn } from 'child_process'
+import * as net from 'net'
+import * as fs from 'fs'
+import * as Util from '../util'
 
-module.exports = class ChromeWrapper {
+declare var global: any
+let Zen = global.Zen
+
+export class ChromeWrapper {
   // locally, we start a headless chrome instance to run tests
+  getBrowser: any
+  process: any
+
+
   launchLocal(opts) {
+    Zen = global.Zen
     const ChromeLauncher = require('chrome-launcher')
     this.getBrowser = ChromeLauncher.launch({
       port: opts.port,
       chromePath: '/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome',
       chromeFlags: ["--headless", "--disable-gpu"]
     }).then(chrome => {
-      require('./util').writeFile(path.join(Zen.config.tmpDir, 'chrome.pid'), chrome.pid)
+      Util.writeFile(path.join(Zen.config.tmpDir, 'chrome.pid'), chrome.pid)
       return CDP({port: opts.port})
     })
   }
@@ -108,6 +117,21 @@ module.exports = class ChromeWrapper {
 // hotReload: trying to update without a full page load
 // running: a test is in progress
 class ChromeTab {
+  id: any
+  config: any
+  cdp: any
+  state: any
+  manifest: any
+  codeHash: any
+  test: any
+  resolveWork: any
+  timeout: any
+  requestMap: any
+  listRequest: any
+  badCodeStack: any
+  badCodeError: any
+  startAt: any
+
   constructor(cdp, id, config, manifest) {
     this.id = id || 'Dev'
     this.config = config
@@ -248,12 +272,12 @@ class ChromeTab {
     }
   }
 
-  failTest(error, stack) {
+  failTest(error, stack='') {
     this.finishTest({error, stack, fullName: this.test.testName})
   }
 
   finishTest(msg) {
-    msg.time = new Date() - this.startAt
+    msg.time = (new Date()).valueOf() - this.startAt.valueOf()
     if (this.resolveWork)
       this.resolveWork(msg)
     this.resolveWork = null

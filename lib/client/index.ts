@@ -1,13 +1,17 @@
-const path = require('path')
-const https = require('https')
-const Util = require('../util')
-const AWS = require('aws-sdk')
-const S3Sync = require('../local-server/s3-sync')
-const Journal = require('./journal')
-const uuidv4 = require('uuid/v4')
+import * as path from 'path'
+import * as https from 'https'
+import * as Util from '../util'
+import * as AWS from 'aws-sdk'
+import S3Sync from '../local-server/s3-sync'
+import { Journal } from './journal'
+import * as uuidv4 from 'uuid/v4'
+import { Global } from '../types/src'
+import { WebpackAdapter } from '../local-server/webpack'
 
-require('sugar').extend()
-global.Zen = {}
+const Zen: Global.Zen = {}
+declare var global: any
+global.Zen = Zen
+global.Util = Util
 
 // load the config with some defaults
 let config = Zen.config = require(path.join(process.cwd(), process.argv[2] || "zen.config.js"))
@@ -33,7 +37,6 @@ Zen.journal = new Journal()
 https.globalAgent.maxSockets = 2000 // TODO multiplex over fewer connections
 
 if (config.webpack) { // boot up webpack (if configured)
-  let WebpackAdapter = require('../local-server/webpack')
   Zen.webpack = new WebpackAdapter()
 }
 
@@ -63,4 +66,9 @@ Zen.indexHtml = function indexHtml (pageType, forS3) {
   </script>`)
 
   return Zen.config.htmlTemplate.replace('ZEN_SCRIPTS', scripts.join('\n'))
+}
+
+export {
+  Zen,
+  Util,
 }

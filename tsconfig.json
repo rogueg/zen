@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "commonjs",
+    "lib": ["dom", "es2017"],
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true,
+    "emitDeclarationOnly": true,
+    //"isolatedModules": true,
+    //"allowJs": true,
+
+    //"strict": true,
+
+    /* Additional Checks */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Module Resolution Options */
+    "moduleResolution": "node",
+    /* This needs to be false so our types are possible to consume without setting this */
+    "esModuleInterop": false,
+    "resolveJsonModule": true
+  },
+  "exclude": [
+    ".yarn/releases/*",
+    "**/__tests__/**/*",
+    "**/__mocks__/**/*",
+    "**/build/**/*",
+    "**/build-es5/**/*"
+  ]
+}

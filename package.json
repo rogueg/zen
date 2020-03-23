@@ -2,13 +2,15 @@
   "name": "@rogueg/zen",
   "version": "0.4.0",
   "description": "Karma replacement that runs your tests in seconds",
-  "main": "lib/cli.js",
+  "main": "lib/cli/bin/cli.js",
   "scripts": {
     "example": "(cd example && node --inspect ../lib/index.js zen.js)",
     "test": "echo \"Ironic: no test specified\" && exit 1",
-    "test:ui": "./lib/cli/cli.js",
+    "test:ui": "ts-node ./lib/cli/bin/cli.js",
     "bundle-fn": "(rm -f tmp/lambda-code.zip && cd tmp/lambda-code && zip -r ../lambda-code.zip *)",
-    "bundle-layer": "(rm -f tmp/layer-chrome.zip && cd tmp/layer/ && zip -r ../layer-chrome.zip *)"
+    "bundle-layer": "(rm -f tmp/layer-chrome.zip && cd tmp/layer/ && zip -r ../layer-chrome.zip *)",
+    "build": "ts-node ./scripts/build",
+    "build:ts": "ts-node ./scripts/buildTs"
   },
   "repository": {
     "type": "git",
@@ -20,28 +22,75 @@
     "url": "https://github.com/rogueg/zen/issues"
   },
   "bin": {
-    "zen": "./lib/cli.js"
+    "zen": "./lib/cli/bin/cli.js"
   },
   "homepage": "https://github.com/rogueg/zen#readme",
   "dependencies": {
+    "@types/yargs": "^15.0.0",
     "aws-sdk": "^2.238.1",
     "btoa": "^1.2.1",
+    "chalk": "^3.0.0",
     "chrome-launcher": "^0.13.0",
     "chrome-remote-interface": "^0.28.1",
     "connect": "^3.6.1",
     "fuzzysort": "^1.1.4",
+    "import-local": "^3.0.2",
     "klaw": "^2.1.1",
     "mime-types": "^2.1.17",
     "node-fetch": "^2.3.0",
     "serve-static": "^1.12.2",
     "sugar": "^2.0.4",
     "svelte": "^2.16.1",
+    "typescript": "^3.8.2",
     "uuid": "^3.3.2",
     "ws": "^3.1.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.3.4",
+    "@babel/plugin-proposal-class-properties": "^7.3.4",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/plugin-transform-modules-commonjs": "^7.1.0",
+    "@babel/plugin-transform-strict-mode": "^7.0.0",
+    "@babel/preset-env": "^7.1.0",
+    "@babel/preset-react": "^7.0.0",
+    "@babel/preset-typescript": "^7.0.0",
+    "@babel/register": "^7.0.0",
+    "@types/node": ">=4.2.0 < 13",
+    "babel-plugin-replace-ts-export-assignment": "^0.0.2",
+    "babel-plugin-typescript-strip-namespaces": "^1.1.1",
     "chai": "^3.5.0",
+    "prettier": "^1.19.0",
+    "string-length": "^3.1.0",
+    "ts-node": "^8.0.0",
     "webpack": "^4",
     "webpack-dev-server": "^3.10"
+  },
+  "prettier": {
+    "bracketSpacing": false,
+    "proseWrap": "never",
+    "singleQuote": true,
+    "trailingComma": "all",
+    "overrides": [
+      {
+        "excludeFiles": [
+          "e2e/__tests__/**/*",
+          "website/versioned_docs/**/*.md"
+        ],
+        "files": [
+          "examples/**/*",
+          "scripts/**/*",
+          "e2e/*/**/*",
+          "website/*.js",
+          "website/*/**/*",
+          "eslintImportResolver.js",
+          "babel.config.js"
+        ],
+        "options": {
+          "printWidth": 80,
+          "singleQuote": true,
+          "trailingComma": "es5"
+        }
+      }
+    ]
   }
 }

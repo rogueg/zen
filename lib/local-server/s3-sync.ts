@@ -1,21 +1,31 @@
-const path = require('path')
-const EventEmitter = require('events')
-const klaw = require('klaw')
-const mime = require('mime-types')
-const AWS = require('aws-sdk')
-const crypto = require('crypto')
-const util = require('../util')
+import * as path from 'path'
+import * as EventEmitter from 'events'
+import * as klaw from 'klaw'
+import * as mime from 'mime-types'
+import * as AWS from 'aws-sdk'
+import * as crypto from 'crypto'
+import * as Util from '../util'
 
-module.exports = class S3Sync extends EventEmitter {
+declare var global: any
+let Zen = global.Zen
+
+export default class S3Sync extends EventEmitter {
+  s3: any
+  snapshotPath: any
+  snapshot: any
+  files: any
+  status: any
+
   constructor() {
     super()
+    Zen = global.Zen
     this.s3 = new AWS.S3({params: {Bucket: Zen.config.aws.assetBucket}})
     this.s3.addExpect100Continue = function () { } // https://github.com/andrewrk/node-s3-client/issues/152
 
     // The snapshot makes things faster with a slight risk that we're out of date with s3
     if (Zen.config.useSnapshot) {
       this.snapshotPath = path.join(Zen.config.tmpDir, 'sync-snapshot.json')
-      this.snapshot = JSON.parse(util.readFile(this.snapshotPath) || '{}')
+      this.snapshot = JSON.parse(Util.readFile(this.snapshotPath) || '{}')
     } else {
       this.snapshot = {}
     }
@@ -39,7 +49,7 @@ module.exports = class S3Sync extends EventEmitter {
 
     // recursively stat every directory, getting a list of files
     let diskFiles = await Promise.all(syncedDirs.map(recursiveStat))
-    diskFiles.flatten().forEach(f => {
+    diskFiles.flatten().forEach((f: any) => {
       // We want to preserve the part of the path relative to the specified filePath, unless that would remove the filename
       f.urlPath = f.path === f.dir.filePath ? path.basename(f.dir.filePath) : f.path.replace(f.dir.filePath, '')
       f.urlPath = path.join(f.dir.webPath || '', f.urlPath).replace(/^\//, '')
@@ -66,7 +76,7 @@ module.exports = class S3Sync extends EventEmitter {
         f.toCheck = true // only check files if the content hash changed
 
       if (!f.hash) {
-        let body = f.body || await util.readFileAsync(f.path)
+        let body = f.body || await Util.readFileAsync(f.path)
         f.hash = crypto.createHash('md5').update(body).digest('hex')
         this.announce(`Hashed ${++hashed} files`)
       }
@@ -88,20 +98,23 @@ module.exports = class S3Sync extends EventEmitter {
     await workInPool(needed, 20, async need => {
       let f = this.files[need.urlPath]
       let Key = f.versionedPath
-      let Body = f.body || await util.readFileAsync(f.path, null)
+      let Body = f.body || await Util.readFileAsync(f.path, null)
       Body = Body instanceof Buffer ? Body : Buffer.from(Body)
       let ContentType = f.contentType || mime.contentType(path.basename(f.path)) || 'application/octet-stream'
 
-      let result = await this.s3.upload({Key, Body, ContentType}).promise()
+      await this.s3.upload({Key, Body, ContentType}).promise()
       // TODO handle an individual upload failure
       this.announce({uploaded: this.status.uploaded + 1})
       this.announce(`Uploading ${++uploaded}/${needed.length}`)
     })
 
     if (Zen.config.useSnapshot) {
-      this.snapshot = Object.map(this.files, f => Object.select(f, ['mtime', 'hash']))
+      this.snapshot = {}
+      Object.keys(this.files).forEach((key: string) => {
+        this.snapshot[key] = Object.select(this.files[key], ['mtime', 'hash'])
+      })
       this.snapshot.version = Zen.config.aws.s3CacheVersion || 0
-      util.writeFile(this.snapshotPath, JSON.stringify(this.snapshot))
+      Util.writeFile(this.snapshotPath, JSON.stringify(this.snapshot))
     }
     this.announce('done')
   }

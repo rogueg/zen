@@ -3,3 +3,7 @@ node_modules
 .vscode
 tmp
 serverless/.serverless
+*.tsbuildinfo
+
+/lib/*/build/
+/lib/*/build-es5/

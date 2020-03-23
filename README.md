@@ -55,3 +55,12 @@ module.exports = {
   webpack: webpackConfig,
 }
 ```
+
+## Developing
+
+```
+npm run build:ts
+npm run build
+npm run test:ui run zen.config.js
+npm run test:ui server zen.config.js
+```

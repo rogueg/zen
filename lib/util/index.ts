@@ -1,24 +1,23 @@
-const connect = require('connect')
-const serveStatic = require('serve-static')
-const path = require('path')
-const fs = require('fs')
-const svelte = require('svelte')
-const WebSocket = require('ws')
-const fetch = require('node-fetch')
+import * as connect from 'connect'
+import * as serveStatic from 'serve-static'
+import * as path from 'path'
+import * as fs from 'fs'
+import * as svelte from 'svelte'
+import * as WebSocket from 'ws'
+import * as fetch from 'node-fetch'
+import './sugar'
 
-module.exports = Util = {}
-
-Util.serveWith404 = function(dir) {
-  return connect().use(serveStatic(dir)).use((i, o) => { o.statusCode = 404; o.end() })
+export function serveWith404(dir) {
+  return connect().use(serveStatic(dir)).use((_, o) => { o.statusCode = 404; o.end() })
 }
 
-Util.serveSvelte = function(req, res) {
+export function serveSvelte(req, res) {
   let name = path.basename(req.url, '.js')
   fs.readFile(path.join(__dirname, '../client/', name + '.html'), 'utf8', function (err, data) {
     if (err) throw err
     name = name[0].toUpperCase() + name.slice(1)
     try {
-      let {js, css} = svelte.compile(data, { format: 'iife', name: name, store: true })
+      let {js} = svelte.compile(data, { format: 'iife', name: name, store: true })
       let code = js.code.replace(`var ${name} =`, `Zen.${name} =`)
       res.writeHead(200, {"Content-Type": "application/javascript; charset=utf-8"})
       res.end(code, 'utf8')
@@ -31,20 +30,20 @@ Util.serveSvelte = function(req, res) {
 }
 
 let iconCache = null
-Util.serveIcons = async function(req, res) {
+export async function serveIcons(_, res) {
   if (iconCache) return res.end(iconCache)
   let icons = {}
   let root = path.join(__dirname, '../client/assets')
-  await Promise.all(fs.readdirSync(root).map(async fname => {
+  await Promise.all(fs.readdirSync(root).map(async (fname: any) => {
     if (!fname.match(/([\w_\-]+)\.svg$/)) return null
-    icons[RegExp.$1.camelize()] = await Util.readFileAsync(path.join(root, fname))
+    icons[RegExp.$1.camelize()] = await readFileAsync(path.join(root, fname))
   }))
 
   iconCache = 'Zen.icons = ' + JSON.stringify(icons)
   res.end(iconCache)
 }
 
-Util.wsSend = function(ws, obj) {
+export function wsSend(ws, obj) {
   if (!ws || ws.readyState != WebSocket.OPEN) return
   ws.send(JSON.stringify(obj), error => {
     if (error)
@@ -52,7 +51,7 @@ Util.wsSend = function(ws, obj) {
   })
 }
 
-Util.post = async function(url, obj) {
+export async function post(url, obj) {
   let resp = await fetch(url, {method: 'POST', body: JSON.stringify(obj)})
   let body = await resp.text()
 
@@ -63,36 +62,35 @@ Util.post = async function(url, obj) {
   }
 }
 
-Util.readFile = function(p, encoding) {
-  if (encoding === undefined) encoding = 'utf8'
-  Util.ensureDir(path.dirname(p))
+export function readFile(p, encoding='utf8') {
+  ensureDir(path.dirname(p))
   if (!fs.existsSync(p)) return ''
   return fs.readFileSync(p, encoding)
 }
 
-Util.readFileAsync = function(p, encoding) {
-  if (encoding === undefined) encoding = 'utf8'
-  Util.ensureDir(path.dirname(p))
-  return new Promise((res, rej) => {
-    fs.readFile(p, encoding, (err, data) => res(data))
+export function readFileAsync(p, encoding='utf8') {
+  ensureDir(path.dirname(p))
+  return new Promise((res) => {
+    fs.readFile(p, encoding, (_, data) => res(data))
   })
 }
 
-Util.writeFile = function (p, data) {
-  Util.ensureDir(path.dirname(p))
-  return new Promise((res, rej) => {
-    fs.writeFile(p, data, (err) => res())
+export function writeFile(p, data) {
+  ensureDir(path.dirname(p))
+  return new Promise((res) => {
+    fs.writeFile(p, data, () => res())
   })
 }
 
-Util.ensureDir = function (dir) {
+export function ensureDir(dir) {
   let parent = path.dirname(dir)
-  fs.existsSync(parent) || Util.ensureDir(parent)
+  fs.existsSync(parent) || ensureDir(parent)
   fs.existsSync(dir) || fs.mkdirSync(dir)
 }
 
-Util.invoke = async function(name, args) {
-  let result = await Zen.lambda.invoke({FunctionName: name, Payload: JSON.stringify(args)}).promise()
+declare var global: any
+export async function invoke(name, args) {
+  let result = await global.Zen.lambda.invoke({FunctionName: name, Payload: JSON.stringify(args)}).promise()
 
   if (result.StatusCode != 200)
     throw new Error(result)

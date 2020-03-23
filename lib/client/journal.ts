@@ -1,10 +1,18 @@
-const path = require('path')
-const util = require('../util')
+import * as path from 'path'
+import * as Util from '../util'
 
-module.exports = class Journal {
+declare var global: any
+let Zen = global.Zen
+
+export class Journal {
+  path: any
+  state: any
+  flushTimeout: any
+
   constructor () {
+    Zen = global.Zen
     this.path = path.join(Zen.config.tmpDir, 'journal.json')
-    this.state = JSON.parse(util.readFile(this.path) || '{}')
+    this.state = JSON.parse(Util.readFile(this.path) || '{}')
   }
 
   record(test) {
@@ -55,6 +63,6 @@ module.exports = class Journal {
   flush() {
     clearTimeout(this.flushTimeout)
     this.flushTimeout = null
-    util.writeFile(this.path, JSON.stringify(this.state))
+    Util.writeFile(this.path, JSON.stringify(this.state))
   }
 }
