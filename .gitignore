@@ -3,3 +3,9 @@ node_modules
 .vscode
 tmp
 serverless/.serverless
+*-debug.log
+*-error.log
+/.nyc_output
+/dist
+/tmp
+.zen
