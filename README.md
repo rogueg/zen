@@ -55,3 +55,10 @@ module.exports = {
   webpack: webpackConfig,
 }
 ```
+
+## Developing
+
+```
+yarn link
+zen local
+```
