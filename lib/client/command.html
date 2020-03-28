@@ -143,7 +143,7 @@
     if (sugg.action) sugg.action()
     else if (sugg.type == 'describe') this.store.filterTests({grep: sugg.title, run: true})
     else if (sugg.type == 'test') this.store.focusTest(sugg.title)
-    store.closeCommand()
+    this.store.closeCommand()
   }
 
   function setSelected(idx) {
