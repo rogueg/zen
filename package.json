@@ -54,7 +54,7 @@
     "@rollup/plugin-virtual": "^2.0.0",
     "serve-static": "^1.12.2",
     "sugar": "^2.0.4",
-    "svelte": "^2.16.1",
+    "svelte": "^3.0.0",
     "uuid": "^3.3.2",
     "ws": "^3.1.0"
   },

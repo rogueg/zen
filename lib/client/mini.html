@@ -1,34 +1,51 @@
+<script>
+  const store = Zen.store
+  const focusGroup = Zen.actions.focusGroup
+  const focusTest = Zen.actions.focusTest
+  let expandedGroup
+  let failureGroups = Zen.computed.failureGroups
+  let groupForFocus = Zen.computed.groupForFocus
+
+  function groupClasses (g) {
+    let s = 'failureGroup'
+    if (g.containsFocus) s = s + ' containsFocus'
+    if (g.passedFocus && g.length === 1) s = s + ' passedFocus'
+    else s = s + ` shade-${g.shade}`
+    return s
+  }
+</script>
+
 <div class='mini'>
   <div class='runDetails'>
-    {#if $socketDisconnected}
+    {#if $store.socketDisconnected}
       Disconnected (check server and reload)
-    {:elseif $workingSetLength || $grep}
-      <span class='grep' title='{ $grep ? "Running only tests that match" : "Running all tests"}'>
-        {@html $grep ? $icons.Filter : $icons.Asterisk}
-        {$grep || 'All tests'}
+    {:else if $store.workingSetLength || $store.grep}
+      <span class='grep' title='{ $store.grep ? "Running only tests that match" : "Running all tests"}'>
+        {@html $store.grep ? $store.icons.Filter : $store.icons.Asterisk}
+        {$store.grep || 'All tests'}
       </span>
     {:else}
       Press alt to get started :)
     {/if}
 
-    {#if $workingSetLength}
-      <span class='progress' title='{$isLambda ? `Running on ${$workerCount} lambda workers` : "Running locally on headless Chrome"}'>
-        {$results.length}/{$workingSetLength}
-        {@html $isLambda ? $icons.Lambda : $icons.Desktop}
+    {#if $store.workingSetLength}
+      <span class='progress' title='{$store.isLambda ? `Running on ${$store.workerCount} lambda workers` : "Running locally on headless Chrome"}'>
+        {$store.results.length}/{$store.workingSetLength}
+        {@html $store.isLambda ? $store.icons.Lambda : $store.icons.Desktop}
       </span>
     {/if}
   </div>
 
   <div class='failureGroups'>
-    {#if $results.length > 0}
+    {#if $store.results.length > 0}
       {#each $failureGroups.slice(0, 17) as group}
-        <span class='{groupClasses(group)}' on:click='$focusGroup(group)'
+        <span class='{groupClasses(group)}' on:click='{() => focusGroup(group)}'
           title={group.key}></span>
       {/each}
-    {:elseif $s3 && $s3 !== 'done'}
-      {$s3}
-    {:elseif $workerCount}
-      Starting {$workerCount} {$isLambda ? 'Lambda' : 'local'} workers
+    {:else if $store.s3 && $store.s3 !== 'done'}
+      {$store.s3}
+    {:else if $store.workerCount}
+      Starting {$store.workerCount} {$store.isLambda ? 'Lambda' : 'local'} workers
     {/if}
   </div>
 
@@ -36,21 +53,21 @@
     {($groupForFocus.error || '')}
     {#if $groupForFocus == expandedGroup}
       {#each $groupForFocus as result}
-        <a href='javascript:void(0)' on:click='$focusTest(result.fullName)' class='fail'>{result.fullName}</a>
+        <a href='javascript:void(0)' on:click='{() => focusTest(result.fullName)}' class='fail'>{result.fullName}</a>
       {/each}
-    {:elseif $groupForFocus.length > 1}
-      <a href='javascript:void(0)' on:click='set({expandedGroup: $groupForFocus})'>{$groupForFocus.length - 1} other tests failed with the same error</a>
+    {:else if $groupForFocus.length > 1}
+      <a href='javascript:void(0)' on:click='{() => expandedGroup = $groupForFocus}'>{$groupForFocus.length - 1} other tests failed with the same error</a>
     {/if}
   </div>
 
   <div class='focusDetails'>
-    {#if $compile.status == 'error'}
-      Compile error {$compile.errors.join(' ')}
-    {:elseif $compile.status == 'compiling'}
-      Compiling {$compile.percentage || 0}% - {$compile.message}
-    {:elseif $focus}
-      <button class='focusStatus {$focusStatus}' on:click='$run({focusOnly: true})' title='Run the focused test [alt-space]'></button>
-      <span>{$focus || ''}</span>
+    {#if $store.compile.status == 'error'}
+      Compile error {$store.compile.errors.join(' ')}
+    {:else if $store.compile.status == 'compiling'}
+      Compiling {$store.compile.percentage || 0}% - {$store.compile.message}
+    {:else if $store.focus}
+      <button class='focusStatus {$store.focusStatus}' on:click='{() => focusTest($store.focus)}' title='Run the focused test [alt-space]'></button>
+      <span>{$store.focus || ''}</span>
     {/if}
   </div>
 </div>
@@ -136,18 +153,3 @@
     font-size: 10px;
   }
 </style>
-
-<script>
-  function groupClasses (g) {
-    let s = 'failureGroup'
-    if (g.containsFocus) s = s + ' containsFocus'
-    if (g.passedFocus && g.length === 1) s = s + ' passedFocus'
-    else s = s + ` shade-${g.shade}`
-    return s
-  }
-
-  export default {
-    computed: {},
-    helpers: {groupClasses}
-  }
-</script>
