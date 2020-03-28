@@ -50,6 +50,8 @@
     "klaw": "^2.1.1",
     "mime-types": "^2.1.17",
     "node-fetch": "^2.3.0",
+    "rollup": "^2.2.0",
+    "@rollup/plugin-virtual": "^2.0.0",
     "serve-static": "^1.12.2",
     "sugar": "^2.0.4",
     "svelte": "^2.16.1",
