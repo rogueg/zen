@@ -36,7 +36,7 @@
     {($groupForFocus.error || '')}
     {#if $groupForFocus == expandedGroup}
       {#each $groupForFocus as result}
-        <a href='javascript:void(0)' on:click='$run({focus: result.fullName, batch: null})' class='fail'>{result.fullName}</a>
+        <a href='javascript:void(0)' on:click='$focusTest(result.fullName)' class='fail'>{result.fullName}</a>
       {/each}
     {:elseif $groupForFocus.length > 1}
       <a href='javascript:void(0)' on:click='set({expandedGroup: $groupForFocus})'>{$groupForFocus.length - 1} other tests failed with the same error</a>
