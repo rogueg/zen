@@ -43,7 +43,7 @@
     "@oclif/plugin-help": "^2.2.3",
     "aws-sdk": "^2.238.1",
     "btoa": "^1.2.1",
-    "chrome-launcher": "^0.13.0",
+    "chrome-launcher": "^0.13.1",
     "chrome-remote-interface": "^0.28.1",
     "connect": "^3.6.1",
     "fuzzysort": "^1.1.4",
