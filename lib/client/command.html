@@ -93,8 +93,7 @@
 </style>
 
 <script>
-  // TODO: make this import work in our rollup config
-  // import { onMount } from 'svelte'
+  import { onMount } from 'svelte'
 
   let input = ''
   let prompt
@@ -106,11 +105,9 @@
   let searchNodes
   $: searchNodes = prepareSearch()
 
-  /*
   onMount(() => {
     prompt.focus()
   })
-  */
 
   // The set of tests or commands has changed. Do as much work up front to make opening command and typing fast.
   export function prepareSearch() {
