@@ -37,21 +37,21 @@
     "/lib"
   ],
   "dependencies": {
-    "del": "^5.1.0",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-help": "^2.2.3",
+    "@rollup/plugin-virtual": "^2.0.0",
     "aws-sdk": "^2.238.1",
     "btoa": "^1.2.1",
     "chrome-launcher": "^0.13.1",
     "chrome-remote-interface": "^0.28.1",
     "connect": "^3.6.1",
+    "del": "^5.1.0",
     "fuzzysort": "^1.1.4",
     "klaw": "^2.1.1",
     "mime-types": "^2.1.17",
     "node-fetch": "^2.3.0",
     "rollup": "^2.2.0",
-    "@rollup/plugin-virtual": "^2.0.0",
     "serve-static": "^1.12.2",
     "sugar": "^2.0.4",
     "svelte": "^3.0.0",
@@ -60,8 +60,8 @@
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
-    "globby": "^10.0.2",
     "chai": "^3.5.0",
+    "globby": "^10.0.2",
     "webpack": "^4",
     "webpack-dev-server": "^3.10"
   }
