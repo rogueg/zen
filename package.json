@@ -1,6 +1,6 @@
 {
   "name": "@superhuman/zen",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Karma replacement that runs your tests in seconds",
   "main": "lib/cli.js",
   "scripts": {
@@ -32,13 +32,13 @@
     "node-fetch": "^2.3.0",
     "serve-static": "^1.12.2",
     "sugar": "^2.0.4",
-    "svelte": "^2.10.1",
+    "svelte": "2.16.1",
     "uuid": "^3.3.2",
     "ws": "^3.1.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "webpack": "^4",
+    "webpack": "4.46.0",
     "webpack-dev-server": "^3.4"
   }
 }
