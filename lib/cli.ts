@@ -3,6 +3,7 @@
 import Server from './server';
 import Zen from './index';
 import * as Util from './util.js';
+import Profiler from './profiler'
 
 // Normalize whether the cli is run directly or via node
 if (process.argv[0].match(/\.js$/)) process.argv.shift();
@@ -74,18 +75,28 @@ async function run() {
           testNames: group.tests,
           sessionId: Zen.config.sessionId,
         });
-        response.forEach(
+        let metrics = response.map(
           (r: { attempts: number; error: boolean; fullName: string }) => {
-            if (r.attempts > 1 && !r.error)
+            let metric = { name: 'log.test_failed', fields: {
+                value: r.attempts,
+                testName: r.fullName,
+                error: r.error
+              }
+            }
+
+            if (r.attempts > 1 && !r.error) {
               console.log(`⚠️ ${r.fullName} (flaked ${r.attempts - 1}x)`);
-            if (r.error) {
+              return metric
+            } else if (r.error) {
               failed++;
               console.log(
                 `🔴 ${r.fullName} ${r.error} (tried ${r.attempts || 1} times)`
               );
+              return metric
             }
           }
-        );
+        ).filter((m : Profiler.metric) => m);
+        await Profiler.logBatch(metrics)
       } catch (e) {
         console.error(e);
         failed += group.tests.length;
