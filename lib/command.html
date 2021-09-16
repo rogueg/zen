@@ -1,25 +1,37 @@
-<div class='ZenCommand'>
-  <input bind:value='input' ref:prompt on:blur='$closeCommand()' on:keydown='onKeyDown(event)' on:input='setSelected(0)' />
-  <div ref:list class='suggestions'>
+<div class="ZenCommand">
+  <input
+    bind:value="input"
+    ref:prompt
+    on:blur="$closeCommand()"
+    on:keydown="onKeyDown(event)"
+    on:input="setSelected(0)"
+  />
+  <div ref:list class="suggestions">
     {#each suggestions as suggestion, index}
-      <div class="{index == selectedIndex ? 'selected' : ''}" title={altText(suggestion)} on:mousedown='takeAction(index)'>
-        {@html icon(suggestion)}
-        <span class='title'>{suggestion.title}</span>
-        {#if suggestion.key}
-          <div class='keys'>
-            {#each suggestion.key.split(' ') as k}
-              <span>{k}</span>
-            {/each}
-          </div>
-        {/if}
+    <div
+      class="{index == selectedIndex ? 'selected' : ''}"
+      title="{altText(suggestion)}"
+      on:mousedown="takeAction(index)"
+    >
+      {@html icon(suggestion)}
+      <span class="title">{suggestion.title}</span>
+      {#if suggestion.key}
+      <div class="keys">
+        {#each suggestion.key.split(' ') as k}
+        <span>{k}</span>
+        {/each}
       </div>
+      {/if}
+    </div>
     {/each}
   </div>
 </div>
 
 <style>
   /* avoid any css rules from  */
-  :global(.ZenCommand *:not(path)) { all: unset; }
+  :global(.ZenCommand *:not(path)) {
+    all: unset;
+  }
 
   .ZenCommand {
     line-height: 1.5em;
@@ -35,7 +47,8 @@
     background: #212121;
     color: #ddd;
     font-size: 12px;
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
+      'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
   }
 
   input {
@@ -72,7 +85,9 @@
     margin-right: 14px;
   }
 
-  .title { flex: 1; }
+  .title {
+    flex: 1;
+  }
 
   .selected {
     background: #313131;
@@ -95,98 +110,126 @@
 <script>
   // The set of tests or commands has changed. Do as much work up front to make opening command and typing fast.
   function prepareSearch() {
-    let queue = [Latte.root], step
-    let nodes = Array.from(Zen.commands)
-    while (step = queue.pop()) {
+    let queue = [Latte.root],
+      step;
+    let nodes = Array.from(Zen.commands);
+    while ((step = queue.pop())) {
       if (step.fullName)
-        nodes.push({type: 'describe', title: step.fullName, depth: step.depth})
-      step.tests.forEach(t => nodes.push({type: 'test', title: t.fullName, describe: step.fullName}))
-      queue = queue.concat(step.children)
+        nodes.push({
+          type: 'describe',
+          title: step.fullName,
+          depth: step.depth,
+        });
+      step.tests.forEach((t) =>
+        nodes.push({ type: 'test', title: t.fullName, describe: step.fullName })
+      );
+      queue = queue.concat(step.children);
     }
 
-    nodes.forEach(n => { n.prep = Zen.Fuzzysort.prepare(n.title) })
-    this.searchNodes = nodes
+    nodes.forEach((n) => {
+      n.prep = Zen.Fuzzysort.prepare(n.title);
+    });
+    this.searchNodes = nodes;
   }
 
   function oncreate() {
-    this.refs.prompt.focus()
+    this.refs.prompt.focus();
   }
 
   function onKeyDown(event) {
-    event.stopPropagation()
-    if (this._isUpKey(event))
-      this.setSelected(this.get().selectedIndex - 1)
+    event.stopPropagation();
+    if (this._isUpKey(event)) this.setSelected(this.get().selectedIndex - 1);
     else if (this._isDownKey(event))
-      this.setSelected(this.get().selectedIndex + 1)
-    else if (this._isEscapeKey(event))
-      store.closeCommand()
-    else if (event.keyCode == 13) // enter
-      this.takeAction(this.get().selectedIndex)
-    else return
-    event.preventDefault()
+      this.setSelected(this.get().selectedIndex + 1);
+    else if (this._isEscapeKey(event)) store.closeCommand();
+    else if (event.keyCode == 13)
+      // enter
+      this.takeAction(this.get().selectedIndex);
+    else return;
+    event.preventDefault();
   }
 
-  function _isUpKey ({keyCode, key, metaKey, altKey, ctrlKey} = {}) {
-    return keyCode == 38 || (!metaKey && !altKey && ctrlKey && ['p', 'k'].includes(key))
+  function _isUpKey({ keyCode, key, metaKey, altKey, ctrlKey } = {}) {
+    return (
+      keyCode == 38 ||
+      (!metaKey && !altKey && ctrlKey && ['p', 'k'].includes(key))
+    );
   }
 
-  function _isDownKey ({keyCode, key, metaKey, altKey, ctrlKey} = {}) {
-    return keyCode == 40 || (!metaKey && !altKey && ctrlKey && ['n', 'j'].includes(key))
+  function _isDownKey({ keyCode, key, metaKey, altKey, ctrlKey } = {}) {
+    return (
+      keyCode == 40 ||
+      (!metaKey && !altKey && ctrlKey && ['n', 'j'].includes(key))
+    );
   }
 
-  function _isEscapeKey ({keyCode, key, metaKey, altKey, ctrlKey} = {}) {
-    return keyCode == 27 || (!metaKey && !altKey && ctrlKey && key == '[')
+  function _isEscapeKey({ keyCode, key, metaKey, altKey, ctrlKey } = {}) {
+    return keyCode == 27 || (!metaKey && !altKey && ctrlKey && key == '[');
   }
 
   function takeAction(idx) {
-    let sugg = this.get().suggestions[idx]
-    if (sugg.action) sugg.action()
-    else if (sugg.type == 'describe') this.store.filterTests({grep: sugg.title, run: true})
-    else if (sugg.type == 'test') this.store.focusTest(sugg.title)
-    store.closeCommand()
+    let sugg = this.get().suggestions[idx];
+    if (sugg.action) sugg.action();
+    else if (sugg.type == 'describe')
+      this.store.filterTests({ grep: sugg.title, run: true });
+    else if (sugg.type == 'test') this.store.focusTest(sugg.title);
+    store.closeCommand();
   }
 
   function setSelected(idx) {
-    idx = Math.max(0, idx)
-    idx = Math.min(this.get().suggestions.length - 1, idx)
-    this.set({selectedIndex: idx})
+    idx = Math.max(0, idx);
+    idx = Math.min(this.get().suggestions.length - 1, idx);
+    this.set({ selectedIndex: idx });
 
-    let el = this.refs.list.children[idx]
+    let el = this.refs.list.children[idx];
     // TODO scroll into view
   }
 
   function icon(node) {
-    if (node.icon) return node.icon
-    if (node.type == 'describe') return Zen.icons.Filter
-    if (node.type == 'test') return Zen.icons.TestTube
+    if (node.icon) return node.icon;
+    if (node.type == 'describe') return Zen.icons.Filter;
+    if (node.type == 'test') return Zen.icons.TestTube;
   }
 
   function altText(node) {
-    if (node.altText) return node.altText
-    if (node.type == 'describe') return 'Only run tests in this suite'
-    if (node.type == 'test') return 'Run this test in this tab'
+    if (node.altText) return node.altText;
+    if (node.type == 'describe') return 'Only run tests in this suite';
+    if (node.type == 'test') return 'Run this test in this tab';
   }
 
-  function suggestions(input='') {
-    let priorityMap = {command: 0, describe: 1, test: 2}
+  function suggestions(input = '') {
+    let priorityMap = { command: 0, describe: 1, test: 2 };
 
-    let sorted = Zen.Fuzzysort.go(input, Zen.Command.searchNodes, {limit: 50, keys: ['prep'], allowTypo: true})
+    let sorted = Zen.Fuzzysort.go(input, Zen.Command.searchNodes, {
+      limit: 50,
+      keys: ['prep'],
+      allowTypo: true,
+    });
     // TODO: we might want to give a boost to commands, and a slightly smaller one to describe blocks
     // * It might also be helpful to promote recently focused/grepped things
 
     if (input) {
-      return sorted.slice(0, 50).map(tuple => tuple.obj)
+      return sorted.slice(0, 50).map((tuple) => tuple.obj);
     } else {
-      return Zen.Command.searchNodes.slice(0, 50)
+      return Zen.Command.searchNodes.slice(0, 50);
     }
   }
 
   export default {
-    setup: Command => { Command.prepareSearch = prepareSearch },
+    setup: (Command) => {
+      Command.prepareSearch = prepareSearch;
+    },
     oncreate,
-    data: () => ({input: '', selectedIndex: 0}),
-    methods: {onKeyDown, setSelected, takeAction, _isUpKey, _isDownKey, _isEscapeKey},
-    helpers: {icon, altText},
-    computed: {suggestions: ({input}) => suggestions(input)}
-  }
+    data: () => ({ input: '', selectedIndex: 0 }),
+    methods: {
+      onKeyDown,
+      setSelected,
+      takeAction,
+      _isUpKey,
+      _isDownKey,
+      _isEscapeKey,
+    },
+    helpers: { icon, altText },
+    computed: { suggestions: ({ input }) => suggestions(input) },
+  };
 </script>

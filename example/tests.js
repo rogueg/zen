@@ -1,43 +1,63 @@
-require('./second')
+require('./second');
 
-window.expect = chai.expect
+window.expect = chai.expect;
 
-module.hot.accept()
+module.hot.accept();
 
-hangingPromise = () => new Promise(r => {})
-throwsError = () => { throw new Error('oops') }
+hangingPromise = () => new Promise((r) => {});
+throwsError = () => {
+  throw new Error('oops');
+};
 
 describe('example', () => {
-  before(() => { console.log('before example'); /* return hangingPromise() */ })
-  after(() => { console.log('after example') })
-  beforeEach(() => { console.log('beforeEach example'); /* return hangingPromise() */ })
-  afterEach(() => console.log('afterEach example'))
+  before(() => {
+    console.log('before example'); /* return hangingPromise() */
+  });
+  after(() => {
+    console.log('after example');
+  });
+  beforeEach(() => {
+    console.log('beforeEach example'); /* return hangingPromise() */
+  });
+  afterEach(() => console.log('afterEach example'));
 
   helper('echoBot', {
-    welcome: function() { return "Hello " + this.name }
-  })
+    welcome: function () {
+      return 'Hello ' + this.name;
+    },
+  });
 
   it('can do math', () => {
-    expect(1 + 1).to.equal(2)
-  })
+    expect(1 + 1).to.equal(2);
+  });
 
   describe('nested', () => {
-    before(() => { console.log('before nested') })
-    after(() => { console.log('after nested') })
-    beforeEach(() => { console.log('beforeEach nested') })
-    afterEach(() => { console.log('afterEach nested') })
+    before(() => {
+      console.log('before nested');
+    });
+    after(() => {
+      console.log('after nested');
+    });
+    beforeEach(() => {
+      console.log('beforeEach nested');
+    });
+    afterEach(() => {
+      console.log('afterEach nested');
+    });
 
-    helper('bark', function() { return 'woof' })
+    helper('bark', function () {
+      return 'woof';
+    });
 
-    it('can echo', function() {
-      this.name = 'Latte'
-      expect(this.echoBot.welcome()).to.equal('Hello Latte')
-    })
+    it('can echo', function () {
+      this.name = 'Latte';
+      expect(this.echoBot.welcome()).to.equal('Hello Latte');
+    });
 
-    it('can bark', function() {
-      expect(this.bark()).to.equal('woof')
-    })
-  })
+    it('can bark', function () {
+      expect(this.bark()).to.equal('woof');
+    });
+  });
 
   // it('doesnt timeout on breakpoints', () => {
   //   expect(1).to.equal(1)
@@ -52,4 +72,4 @@ describe('example', () => {
   //   let ret = prm.then(() => { throw new Error('BANG') })
   //   return ret
   // })
-})
+});
