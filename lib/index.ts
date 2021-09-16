@@ -1,24 +1,53 @@
-const path = require('path');
-const https = require('https');
-const Util = require('./util');
-const AWS = require('aws-sdk');
-const S3Sync = require('./s3-sync');
-const Journal = require('./journal');
-const uuidv4 = require('uuid/v4');
+import * as path from 'path';
+import * as https from 'https';
+import * as Util from './util';
+import * as AWS from 'aws-sdk';
+import S3Sync from './s3-sync';
+import Journal from './journal';
+import uuidv4 from 'uuid/v4';
+import WebpackAdapter from './webpack';
 
 require('sugar').extend();
-global.Zen = {};
+type Zen = {
+  s3Sync: S3Sync;
+  lambda: AWS.Lambda;
+  journal: Journal;
+  webpack: WebpackAdapter;
+  indexHtml: (pageType: string, forS3: boolean) => string;
+
+  config: {
+    appRoot: string;
+    port: number;
+    testDependencies: string[];
+    lambdaConcurrency: number;
+    htmlTemplate: string;
+    sessionId: string;
+    useSnapshot: boolean;
+    tmpDir: string;
+    alsoServe: { addToIndex: boolean; filePath: string }[];
+
+    // TODO flesh this out
+    aws: any;
+
+    // TODO flesh this out
+    webpack: any;
+  };
+};
+
+// TODO fix the arg part, the order for shifting was broken because of import order
+const Zen: Partial<Zen> = ((global as any).Zen = {
+  config: require(path.join(process.cwd(), process.argv[3])),
+});
 
 // load the config with some defaults
-let config = (Zen.config = require(path.join(process.cwd(), process.argv[2])));
+let config = Zen.config;
 config.appRoot = path.resolve(process.cwd(), config.appRoot || '');
 config.port = config.port || 3100;
 config.testDependencies = config.testDependencies || [];
 config.lambdaConcurrency = config.lambdaConcurrency || 400;
 config.htmlTemplate = config.htmlTemplate || '<body>ZEN_SCRIPTS</body>';
 config.sessionId = config.sessionId || uuidv4();
-config.useSnapshot =
-  config.useSnapshot === undefined ? true : !!config.useSnapshot;
+config.useSnapshot === undefined ? true : !!config.useSnapshot;
 
 // tmpDir is where we cache files between runs
 config.tmpDir = config.tmpDir || path.join(config.appRoot, '.zen');
@@ -35,7 +64,6 @@ https.globalAgent.maxSockets = 2000; // TODO multiplex over fewer connections
 
 if (config.webpack) {
   // boot up webpack (if configured)
-  let WebpackAdapter = require('./webpack');
   Zen.webpack = new WebpackAdapter();
 }
 
@@ -57,23 +85,23 @@ Zen.indexHtml = function indexHtml(pageType, forS3) {
 
   if (forS3) {
     deps.push(
-      (config.alsoServe || []).map(
+      ...(config.alsoServe || []).map(
         (as) => as.addToIndex && path.basename(as.filePath)
       )
     );
-    deps.push(entries.map((e) => `webpack/${e}`));
+    deps.push(entries.map((e: string) => `webpack/${e}`));
   } else {
     deps.push(
-      Zen.config.testDependencies.map((t) =>
+      ...Zen.config.testDependencies.map((t) =>
         t.replace(Zen.config.appRoot, '/base')
       )
     );
-    deps.push(entries.map((e) => `//localhost:3100/webpack/${e}`));
+    deps.push(entries.map((e: string) => `//localhost:3100/webpack/${e}`));
   }
 
   let scripts = deps
-    .flatten()
-    .compact(true)
+    .flat()
+    .filter((x) => x)
     .map((d) => `<script src='${d}'></script>`);
 
   // NB it's important that we don't include the config when the index is uploaded to S3
@@ -84,3 +112,6 @@ Zen.indexHtml = function indexHtml(pageType, forS3) {
 
   return Zen.config.htmlTemplate.replace('ZEN_SCRIPTS', scripts.join('\n'));
 };
+
+// TODO clean this up to remove the casting
+export default Zen as Zen;
