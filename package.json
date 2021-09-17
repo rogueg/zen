@@ -7,7 +7,8 @@
     "example": "(cd example && node --inspect ../lib/index.js zen.js)",
     "test": "echo \"Ironic: no test specified\" && exit 1",
     "format": "prettier --write --ignore-unknown .",
-    "build": "node ./build.js"
+    "build": "node ./build.js",
+    "start": "node ./build.js -w"
   },
   "repository": {
     "type": "git",
@@ -36,7 +37,8 @@
     "sugar": "^2.0.4",
     "svelte": "2.16.1",
     "uuid": "^3.3.2",
-    "ws": "^3.1.0"
+    "ws": "^3.1.0",
+    "yargs": "^17.1.1"
   },
   "devDependencies": {
     "chai": "^3.5.0",

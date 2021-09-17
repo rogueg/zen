@@ -1,7 +1,22 @@
 const esbuild = require('esbuild')
+const yargs = require('yargs')
 const { nodeExternalsPlugin } = require('esbuild-node-externals')
 
-// Build the CLI
+const argv = yargs(process.argv)
+  .alias('w', 'watch')
+  .describe('w', 'toggle watch mode').argv
+
+let watch
+if (argv.watch) {
+  watch = {
+    onRebuild(error, result) {
+      if (error) console.error('watch build failed:', error)
+      else console.log('watch build succeeded:', result)
+    },
+  }
+}
+
+// // Build the CLI
 esbuild
   .build({
     entryPoints: ['lib/cli.ts'],
@@ -9,6 +24,7 @@ esbuild
     bundle: true,
     platform: 'node',
     plugins: [nodeExternalsPlugin()],
+    watch,
   })
   .catch(() => process.exit(1))
 
@@ -19,6 +35,7 @@ function buildSimpleFile(file, outfile) {
       outfile: `build/${outfile}.js`,
       platform: 'node',
       plugins: [nodeExternalsPlugin()],
+      watch,
     })
     .catch(() => process.exit(1))
 }
