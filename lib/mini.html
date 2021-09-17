@@ -177,15 +177,15 @@
 
 <script>
   function groupClasses(g) {
-    let s = 'failureGroup';
-    if (g.containsFocus) s = s + ' containsFocus';
-    if (g.passedFocus && g.length === 1) s = s + ' passedFocus';
-    else s = s + ` shade-${g.shade}`;
-    return s;
+    let s = 'failureGroup'
+    if (g.containsFocus) s = s + ' containsFocus'
+    if (g.passedFocus && g.length === 1) s = s + ' passedFocus'
+    else s = s + ` shade-${g.shade}`
+    return s
   }
 
   export default {
     computed: {},
     helpers: { groupClasses },
-  };
+  }
 </script>

@@ -1,5 +1,5 @@
-const esbuild = require('esbuild');
-const { nodeExternalsPlugin } = require('esbuild-node-externals');
+const esbuild = require('esbuild')
+const { nodeExternalsPlugin } = require('esbuild-node-externals')
 
 // Build the CLI
 esbuild
@@ -10,7 +10,7 @@ esbuild
     platform: 'node',
     plugins: [nodeExternalsPlugin()],
   })
-  .catch(() => process.exit(1));
+  .catch(() => process.exit(1))
 
 function buildSimpleFile(file, outfile) {
   esbuild
@@ -20,10 +20,10 @@ function buildSimpleFile(file, outfile) {
       platform: 'node',
       plugins: [nodeExternalsPlugin()],
     })
-    .catch(() => process.exit(1));
+    .catch(() => process.exit(1))
 }
 
-buildSimpleFile('lib/webpack-client.js', 'webpack-client');
-buildSimpleFile('lib/latte.js', 'latte');
-buildSimpleFile('lib/worker.js', 'worker');
-buildSimpleFile('lib/head.js', 'head');
+buildSimpleFile('lib/webpack-client.js', 'webpack-client')
+buildSimpleFile('lib/latte.js', 'latte')
+buildSimpleFile('lib/worker.js', 'worker')
+buildSimpleFile('lib/head.js', 'head')

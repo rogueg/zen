@@ -1,4 +1,4 @@
-const path = require('path');
+const path = require('path')
 
 module.exports = {
   appRoot: '..',
@@ -15,4 +15,4 @@ module.exports = {
     plugins: [],
     devtool: 'eval', // eval is recommended, because the source updates in chrome devtools
   },
-};
+}

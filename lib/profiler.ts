@@ -7,16 +7,16 @@ export type metric = {
   fields: Record<string, string | number>
 }
 
-export function logBatch (metrics: metric[]) {
+export function logBatch(metrics: metric[]) {
   return fetch(`${BACKEND_URL}/v3/metrics.write`, {
     method: 'POST',
     body: JSON.stringify({
       dataset: 'zen',
-      metrics
-    })
+      metrics,
+    }),
   })
 }
 
-export function log (name : metric['name'], fields: metric['fields']) {
+export function log(name: metric['name'], fields: metric['fields']) {
   return logBatch([{ name, fields }])
 }
