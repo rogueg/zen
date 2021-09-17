@@ -1,5 +1,4 @@
 import fetch from 'node-fetch'
-
 const BACKEND_URL = 'https://superhuman.com/~backend'
 
 export type metric = {

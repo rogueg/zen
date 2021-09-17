@@ -2,8 +2,15 @@
 
 import Server from './server'
 import Zen from './index'
+import yargs from 'yargs'
 import * as Util from './util.js'
 import * as Profiler from './profiler'
+
+const argv = yargs(process.argv)
+  .options({
+    logging: { type: 'boolean', default: false }
+  })
+  .parseSync()
 
 // Normalize whether the cli is run directly or via node
 if (process.argv[0].match(/\.js$/)) process.argv.shift()
@@ -98,7 +105,9 @@ async function run() {
             }
           })
           .filter((m: Profiler.metric) => m)
-        await Profiler.logBatch(metrics)
+        if (argv.logging) {
+          await Profiler.logBatch(metrics)
+        }
       } catch (e) {
         console.error(e)
         failed += group.tests.length
