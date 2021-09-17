@@ -3,7 +3,7 @@
 import Server from './server';
 import Zen from './index';
 import * as Util from './util.js';
-import Profiler from './profiler'
+import * as Profiler from './profiler'
 
 // Normalize whether the cli is run directly or via node
 if (process.argv[0].match(/\.js$/)) process.argv.shift();
