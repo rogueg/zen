@@ -1,5 +1,4 @@
-import fetch from 'node-fetch'
-const BACKEND_URL = 'https://superhuman.com/~backend'
+import Zen from './index'
 
 export type metric = {
   name: string
@@ -7,13 +6,10 @@ export type metric = {
 }
 
 export function logBatch(metrics: metric[]) {
-  return fetch(`${BACKEND_URL}/v3/metrics.write`, {
-    method: 'POST',
-    body: JSON.stringify({
-      dataset: 'zen',
-      metrics,
-    }),
-  })
+  let log = Zen.config.log
+  if (!log) return
+
+  return log(metrics)
 }
 
 export function log(name: metric['name'], fields: metric['fields']) {

@@ -8,7 +8,8 @@
     "test": "echo \"Ironic: no test specified\" && exit 1",
     "format": "prettier --write --ignore-unknown .",
     "build": "node ./build.js",
-    "start": "node ./build.js -w"
+    "start": "node ./build.js -w",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,11 @@
   "bin": {
     "zen": "./build/cli.js"
   },
+  "files": [
+    "lib/",
+    "build/",
+    "LICENSE"
+  ],
   "homepage": "https://github.com/superhuman/zen#readme",
   "dependencies": {
     "aws-sdk": "^2.238.1",

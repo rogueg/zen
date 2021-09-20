@@ -6,6 +6,7 @@ import S3Sync from './s3-sync'
 import Journal from './journal'
 import uuidv4 from 'uuid/v4'
 import WebpackAdapter from './webpack'
+import type { metric } from './profiler'
 
 require('sugar').extend()
 type Zen = {
@@ -16,6 +17,7 @@ type Zen = {
   indexHtml: (pageType: string, forS3: boolean) => string
 
   config: {
+    log?: (metrics: metric[]) => Promise<void>
     appRoot: string
     port: number
     testDependencies: string[]
