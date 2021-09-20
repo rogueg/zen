@@ -8,7 +8,7 @@ import * as Profiler from './profiler'
 
 const argv = yargs(process.argv)
   .options({
-    logging: { type: 'boolean', default: false }
+    logging: { type: 'boolean', default: false },
   })
   .parseSync()
 
