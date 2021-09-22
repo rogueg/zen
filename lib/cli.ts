@@ -23,6 +23,7 @@ switch (mode) {
 
   case 'run':
     run()
+    break
 
   case 'deploy':
     // TODO implement
@@ -71,6 +72,7 @@ async function run() {
   let failed = 0
   t0 = Date.now()
   console.log(`Running ${workingSet.length} tests on ${groups.length} workers`)
+  let metrics = []
   await Promise.all(
     groups.map(async (group: { tests: unknown[] }) => {
       try {
@@ -82,8 +84,8 @@ async function run() {
           testNames: group.tests,
           sessionId: Zen.config.sessionId,
         })
-        let metrics = response
-          .map((r: { attempts: number; error: boolean; fullName: string }) => {
+        response
+          .forEach((r: { attempts: number; error: boolean; fullName: string }) => {
             let metric = {
               name: 'log.test_failed',
               fields: {
@@ -95,25 +97,24 @@ async function run() {
 
             if (r.attempts > 1 && !r.error) {
               console.log(`⚠️ ${r.fullName} (flaked ${r.attempts - 1}x)`)
-              return metric
+              metrics.push(metric)
             } else if (r.error) {
               failed++
               console.log(
                 `🔴 ${r.fullName} ${r.error} (tried ${r.attempts || 1} times)`
               )
-              return metric
+              metrics.push(metric)
             }
           })
-          .filter((m: Profiler.metric) => m)
-        if (argv.logging) {
-          await Profiler.logBatch(metrics)
-        }
       } catch (e) {
         console.error(e)
         failed += group.tests.length
       }
     })
   )
+
+  if (argv.logging) await Profiler.logBatch(metrics)
+
   console.log(`Took ${Date.now() - t0}ms`)
   console.log(
     `${failed ? '😢' : '🎉'} ${failed} failed test${failed === 1 ? '' : 's'}`
