@@ -6,34 +6,25 @@ import yargs from 'yargs'
 import * as Util from './util.js'
 import * as Profiler from './profiler'
 
-const argv = yargs(process.argv)
+yargs(process.argv.slice(2))
+  .usage('$0 <cmd> [args]')
+  .command('server', 'Run zen with a local server', (argv) => {
+    console.log("SERVER", argv)
+    new Server()
+  })
+  .command('run', 'Run zen in the console', argv => {
+    const args = argv.parseSync()
+    run({ logging: args.logging, rerun: args.rerun, debug: args.debug, lambdaCutoff: args.lambdaCutoff })
+  })
   .options({
     logging: { type: 'boolean', default: false },
+    rerun: { type: 'number', default: 3 },
+    lambdaCutoff: { type: 'number', default: 60 },
+    debug: { type: 'boolean', default: false }
   })
   .parseSync()
 
-// Normalize whether the cli is run directly or via node
-if (process.argv[0].match(/\.js$/)) process.argv.shift()
-
-const mode = process.argv[2] || 'run'
-switch (mode) {
-  case 'server':
-    new Server()
-    break
-
-  case 'run':
-    run()
-
-  case 'deploy':
-    // TODO implement
-    console.log('DEPLOY IS NOT IMPLEMENTED YET')
-    break
-
-  default:
-    console.error(`Invalid mode: ${mode}`)
-}
-
-async function run() {
+async function run({ logging, rerun, debug, lambdaCutoff }) {
   let t0 = Date.now()
   if (Zen.webpack) {
     console.log('Webpack building')
@@ -55,7 +46,7 @@ async function run() {
   console.log('Syncing to S3')
   Zen.s3Sync.on(
     'status',
-    (msg: string) => process.env.DEBUG && console.log(msg)
+    (msg: string) => (debug || process.env.DEBUG) && console.log(msg)
   )
   await Zen.s3Sync.run(Zen.indexHtml('worker', true))
   console.log(`Took ${Date.now() - t0}ms`)
@@ -71,19 +62,18 @@ async function run() {
   let failed = 0
   t0 = Date.now()
   console.log(`Running ${workingSet.length} tests on ${groups.length} workers`)
+  let metrics = []
   await Promise.all(
     groups.map(async (group: { tests: unknown[] }) => {
       try {
-        let deflakeLimit = parseInt(process.env.RERUN_LIMIT)
-        if (isNaN(deflakeLimit)) deflakeLimit = 3
-
         let response = await Util.invoke('zen-workTests', {
-          deflakeLimit,
+          deflakeLimit: rerun,
+          lambdaCutoff: lambdaCutoff,
           testNames: group.tests,
           sessionId: Zen.config.sessionId,
         })
-        let metrics = response
-          .map((r: { attempts: number; error: boolean; fullName: string }) => {
+        response
+          .forEach((r: { attempts: number; error: boolean; fullName: string }) => {
             let metric = {
               name: 'log.test_failed',
               fields: {
@@ -95,25 +85,24 @@ async function run() {
 
             if (r.attempts > 1 && !r.error) {
               console.log(`⚠️ ${r.fullName} (flaked ${r.attempts - 1}x)`)
-              return metric
+              metrics.push(metric)
             } else if (r.error) {
               failed++
               console.log(
                 `🔴 ${r.fullName} ${r.error} (tried ${r.attempts || 1} times)`
               )
-              return metric
+              metrics.push(metric)
             }
           })
-          .filter((m: Profiler.metric) => m)
-        if (argv.logging) {
-          await Profiler.logBatch(metrics)
-        }
       } catch (e) {
         console.error(e)
         failed += group.tests.length
       }
     })
   )
+
+  if (logging) await Profiler.logBatch(metrics)
+
   console.log(`Took ${Date.now() - t0}ms`)
   console.log(
     `${failed ? '😢' : '🎉'} ${failed} failed test${failed === 1 ? '' : 's'}`
