@@ -37,7 +37,7 @@ yargs(process.argv.slice(2))
   })
   .options({
     logging: { type: 'boolean', default: false },
-    rerun: { type: 'number', default: 10 },
+    rerun: { type: 'number', default: 3 },
     lambdaCutoff: { type: 'number', default: 60 },
     debug: { type: 'boolean', default: false },
   })
