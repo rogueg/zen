@@ -9,7 +9,7 @@ import WebpackAdapter from './webpack'
 import type { metric } from './profiler'
 
 require('sugar').extend()
-type Zen = {
+export type Zen = {
   s3Sync: S3Sync
   lambda: AWS.Lambda
   journal: Journal
