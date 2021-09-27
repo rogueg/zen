@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import Server from './server'
-import Zen from './index'
+import initZen, { Zen } from './index'
 import yargs from 'yargs'
 import * as Util from './util.js'
 import * as Profiler from './profiler'
@@ -18,22 +18,28 @@ export type CLIOptions = {
   rerun: number
   lambdaCutoff: number
   debug: boolean
+  configFile: string
 }
 
 yargs(process.argv.slice(2))
-  .usage('$0 <cmd> [args]')
-  .command(['local', 'server'], 'Run zen with a local server', (argv) => {
-    console.log('SERVER', argv)
+  .usage('$0 <cmd> [configFile]')
+  .command(['local [configFile]', 'server [configFile]'], 'Run zen with a local server', (yargs) => {
+    yargs.positional('file', {
+      type: 'string',
+      describe: 'Path to the config file',
+    })
+  }, async (argv : CLIOptions) => {
+    await initZen(argv.configFile)
     new Server()
   })
-  .command(['remote', 'run'], 'Run zen in the console', (argv) => {
-    const args = argv.parseSync() as unknown as CLIOptions
-    run({
-      logging: args.logging,
-      rerun: args.rerun,
-      debug: args.debug,
-      lambdaCutoff: args.lambdaCutoff,
+  .command('remote [configFile]', 'Run zen in the console', (yargs) => {
+    yargs.positional('file', {
+      type: 'string',
+      describe: 'Path to the config file',
     })
+  }, async (argv : CLIOptions) => {
+    const zen = await initZen(argv.configFile)
+    run(zen, argv)
   })
   .options({
     logging: { type: 'boolean', default: false },
@@ -41,7 +47,7 @@ yargs(process.argv.slice(2))
     lambdaCutoff: { type: 'number', default: 60 },
     debug: { type: 'boolean', default: false },
   })
-  .parseSync()
+  .argv
 
 function createResultMap(
   testFailures: testResult[]
@@ -56,6 +62,7 @@ function createResultMap(
 }
 
 async function runTests(
+  zen: Zen,
   opts: CLIOptions,
   workingSet: string[],
   previousFailures?: Partial<Record<string, testResult>>,
@@ -64,9 +71,9 @@ async function runTests(
   // Here as a safeguard incase of some issue causes an infinite loop
   if (depth > 5 && previousFailures) return previousFailures
 
-  const groups = Zen.journal.groupTests(
+  const groups = zen.journal.groupTests(
     workingSet,
-    Zen.config.lambdaConcurrency
+    zen.config.lambdaConcurrency
   )
 
   const failedTests: testResult[] = await Promise.all(
@@ -76,7 +83,7 @@ async function runTests(
           deflakeLimit: 3,
           lambdaCutoff: opts.lambdaCutoff,
           testNames: group.tests,
-          sessionId: Zen.config.sessionId,
+          sessionId: zen.config.sessionId,
         })
         return response.filter((r: testResult) => r.error || r.attempts > 1)
       } catch (e) {
@@ -118,18 +125,18 @@ async function runTests(
 
   // If there are still tests, then repeat with the failed tests creating the workingSet
   if (testsToContinue.length !== 0) {
-    return await runTests(opts, testsToContinue, failures, depth + 1)
+    return await runTests(zen, opts, testsToContinue, failures, depth + 1)
   }
 
   return failures
 }
 
-async function run(opts: CLIOptions) {
+async function run(zen: Zen, opts: CLIOptions) {
   let t0 = Date.now()
-  if (Zen.webpack) {
+  if (zen.webpack) {
     console.log('Webpack building')
     let previousPercentage = 0
-    Zen.webpack.on(
+    zen.webpack.on(
       'status',
       (_status: string, stats: { message: string; percentage: number }) => {
         if (stats.percentage && stats.percentage > previousPercentage) {
@@ -138,26 +145,26 @@ async function run(opts: CLIOptions) {
         }
       }
     )
-    await Zen.webpack.build()
+    await zen.webpack.build()
     console.log(`Took ${Date.now() - t0}ms`)
   }
 
   t0 = Date.now()
   console.log('Syncing to S3')
-  Zen.s3Sync.on(
+  zen.s3Sync.on(
     'status',
     (msg: string) => (opts.debug || process.env.DEBUG) && console.log(msg)
   )
-  await Zen.s3Sync.run(Zen.indexHtml('worker', true))
+  await zen.s3Sync.run(zen.indexHtml('worker', true))
   console.log(`Took ${Date.now() - t0}ms`)
 
   t0 = Date.now()
   console.log('Getting test names')
   const workingSet = await Util.invoke('zen-listTests', {
-    sessionId: Zen.config.sessionId,
+    sessionId: zen.config.sessionId,
   })
 
-  const failedTests = await runTests(opts, workingSet)
+  const failedTests = await runTests(zen, opts, workingSet)
   const metrics = []
   let failCount = 0
   for (const testName in failedTests) {
