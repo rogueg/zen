@@ -63,7 +63,6 @@ export default async function initZen (configFilePath: string) : Promise<Zen> {
   Util.ensureDir(config.tmpDir)
   console.log('Using tmpDir', config.tmpDir)
 
-  console.log(config)
   AWS.config.update(config.aws)
   Zen.s3Sync = new S3Sync() // Keeps our local files in sync with S3
   Zen.lambda = new AWS.Lambda()
