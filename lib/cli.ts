@@ -1,12 +1,10 @@
-#!/usr/bin/env node
-
 import Server from './server'
 import initZen, { Zen } from './index'
 import yargs from 'yargs'
 import * as Util from './util.js'
 import * as Profiler from './profiler'
 
-type testResult = {
+type testFailure = {
   fullName: string
   attempts: number
   error: string
@@ -15,8 +13,7 @@ type testResult = {
 
 export type CLIOptions = {
   logging: boolean
-  rerun: number
-  lambdaCutoff: number
+  maxAttempts: number
   debug: boolean
   configFile: string
 }
@@ -43,49 +40,28 @@ yargs(process.argv.slice(2))
   })
   .options({
     logging: { type: 'boolean', default: false },
-    rerun: { type: 'number', default: 3 },
-    lambdaCutoff: { type: 'number', default: 60 },
+    maxAttempts: { type: 'number', default: 3 },
     debug: { type: 'boolean', default: false },
   })
   .argv
+  
+type TestResultsMap = Record<string, testFailure>
 
-function createResultMap(
-  testFailures: testResult[]
-): Partial<Record<string, testResult>> {
-  return testFailures.reduce(
-    (acc: Partial<Record<string, testResult>>, result: testResult) => {
-      acc[result.fullName] = result
-      return acc
-    },
-    {}
-  )
-}
-
-async function runTests(
-  zen: Zen,
-  opts: CLIOptions,
-  workingSet: string[],
-  previousFailures?: Partial<Record<string, testResult>>,
-  depth = 0
-): Promise<Partial<Record<string, testResult>>> {
-  // Here as a safeguard incase of some issue causes an infinite loop
-  if (depth > 5 && previousFailures) return previousFailures
-
+async function runTests (zen: Zen, opts: CLIOptions, tests : string[]) : Promise<TestResultsMap> {
   const groups = zen.journal.groupTests(
-    workingSet,
+    tests,
     zen.config.lambdaConcurrency
   )
 
-  const failedTests: testResult[] = await Promise.all(
-    groups.map(async (group: { tests: string[] }): Promise<testResult[]> => {
+  const failedTests = await Promise.all(
+    groups.map(async (group: { tests: string[] }): Promise<testFailure[]> => {
       try {
         const response = await Util.invoke('zen-workTests', {
-          deflakeLimit: 3,
-          lambdaCutoff: opts.lambdaCutoff,
+          deflakeLimit: opts.maxAttempts,
           testNames: group.tests,
           sessionId: zen.config.sessionId,
         })
-        return response.filter((r: testResult) => r.error || r.attempts > 1)
+        return response.filter((r: testFailure) => r.error || r.attempts > 1)
       } catch (e) {
         console.error(e)
         return group.tests.map((name: string) => {
@@ -94,17 +70,28 @@ async function runTests(
       }
     })
   )
+  
+  return failedTests.reduce(
+    (acc: Record<string, testFailure>, result: testFailure) => {
+      acc[result.fullName] = result
+      return acc
+    },
+    {}
+  )
+}
 
-  // combine the new failures into the collection of all failures
-  const failedTestsMap = createResultMap(failedTests.flat())
-  let failures = failedTestsMap
-  if (previousFailures) {
-    failures = { ...previousFailures }
-    for (const testName in failedTestsMap) {
-      const prevFailure = failures[testName]
-      const curFailure = failedTestsMap[testName]
+function combineFailures (currentFailures : TestResultsMap, previousFailures ?: TestResultsMap) : TestResultsMap {
+  if (!previousFailures) return currentFailures
 
-      if (!prevFailure || !curFailure) continue
+  // Combine the current failures with the previous failures
+  const failures = { ...previousFailures }
+  for (const testName in currentFailures) {
+    const prevFailure = failures[testName]
+    const curFailure = currentFailures[testName]
+
+    if (!prevFailure) {
+      failures[testName] = curFailure
+    } else {
       failures[testName] = {
         ...prevFailure,
         error: curFailure.error,
@@ -113,21 +100,7 @@ async function runTests(
       }
     }
   }
-
-  const testsToContinue = []
-  for (const testName in failures) {
-    const failure = failures[testName]
-    if (!failure) continue
-    if (failure.error && failure.attempts < opts.rerun) {
-      testsToContinue.push(failure.fullName)
-    }
-  }
-
-  // If there are still tests, then repeat with the failed tests creating the workingSet
-  if (testsToContinue.length !== 0) {
-    return await runTests(zen, opts, testsToContinue, failures, depth + 1)
-  }
-
+  
   return failures
 }
 
@@ -160,17 +133,33 @@ async function run(zen: Zen, opts: CLIOptions) {
 
   t0 = Date.now()
   console.log('Getting test names')
-  const workingSet = await Util.invoke('zen-listTests', {
+  let workingSet : string[] = await Util.invoke('zen-listTests', {
     sessionId: zen.config.sessionId,
   })
 
-  const failedTests = await runTests(zen, opts, workingSet)
+  // In case there is an infinite loop, this should brick the test running
+  let runsLeft = 5
+  let failures : TestResultsMap | undefined
+  while (runsLeft > 0 || workingSet.length > 0) {
+    runsLeft--
+
+    const currentFailures = await runTests(zen, opts, workingSet)
+    failures = combineFailures(currentFailures, failures)
+
+    const testsToContinue = []
+    for (const testName in failures) {
+      const failure = failures[testName]
+      if (!failure) continue
+      if (failure.error && failure.attempts < opts.maxAttempts) {
+        testsToContinue.push(failure.fullName)
+      }
+    }
+    workingSet = testsToContinue
+  }
+  
   const metrics = []
   let failCount = 0
-  for (const testName in failedTests) {
-    const test = failedTests[testName]
-    if (!test) continue
-
+  for (const test of Object.values(failures || {})) {
     metrics.push({
       name: 'log.test_failed',
       fields: {
