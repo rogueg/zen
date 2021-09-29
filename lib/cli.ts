@@ -37,7 +37,6 @@ yargs(process.argv.slice(2))
       describe: 'Path to the config file',
     })
   }, async (argv : CLIOptions) => {
-    console.log("MAX ATTEMPTS", argv.maxAttempts)
     const zen = await initZen(argv.configFile)
     run(zen, argv)
   })
