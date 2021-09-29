@@ -2,7 +2,7 @@
 
 import Server from './server'
 import initZen, { Zen } from './index'
-import yargs from 'yargs'
+import yargs, { fail } from 'yargs'
 import * as Util from './util.js'
 import * as Profiler from './profiler'
 
@@ -55,7 +55,7 @@ async function runTests (zen: Zen, opts: CLIOptions, tests : string[]) : Promise
     zen.config.lambdaConcurrency
   )
 
-  const failedTests = await Promise.all(
+  const failedTests : testFailure[][] = await Promise.all(
     groups.map(async (group: { tests: string[] }): Promise<testFailure[]> => {
       try {
         const response = await Util.invoke('zen-workTests', {
@@ -73,7 +73,7 @@ async function runTests (zen: Zen, opts: CLIOptions, tests : string[]) : Promise
     })
   )
   
-  return failedTests.reduce(
+  return failedTests.flat().reduce(
     (acc: Record<string, testFailure>, result: testFailure) => {
       acc[result.fullName] = result
       return acc
@@ -142,6 +142,7 @@ async function run(zen: Zen, opts: CLIOptions) {
   // In case there is an infinite loop, this should brick the test running
   let runsLeft = 5
   let failures : TestResultsMap | undefined
+  console.log(`Running ${workingSet.length} tests`)
   while (runsLeft > 0 || workingSet.length > 0) {
     runsLeft--
 
@@ -157,6 +158,7 @@ async function run(zen: Zen, opts: CLIOptions) {
       }
     }
     workingSet = testsToContinue
+    if (workingSet.length > 0) console.log(`Trying to rerun ${workingSet.length} tests`)
   }
   
   const metrics = []
