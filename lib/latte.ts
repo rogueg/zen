@@ -13,8 +13,8 @@ type LatteOptions = { mode: mode; willHotReload: boolean }
 type TestContext = Partial<Record<string, FnOrGroup>> & {
   _suite: TestSuite
 }
-type Test = { fn?: TestFn; fullName: string; suite: TestSuite; stack?: string }
-type TestSetupCb = { fn: TestSetupFn, stack?: string }
+type Test = { fn: TestFn; fullName: string; suite: TestSuite; stack?: string }
+type TestSetupCb = { fn: TestFn, stack?: string }
 type TestSuiteCallbacks = 'after' | 'afterEach' | 'before' | 'beforeEach'
 
 type TestSuite = {
@@ -44,7 +44,6 @@ export type Latte = {
   currentContext: {
     currentTest: Test
   }
-  cleanup: 
 }
 
 type describe = {
@@ -320,10 +319,10 @@ declare global {
 
   function registerBeforeAfter(
     type: TestSuiteCallbacks,
-    fn: TestSetupFn,
+    fn: TestFn,
     onDispose?: OnDispose
   ) {
-    const handle = { fn, stack: getStack(2) }
+    const handle = { fn, stack: getStack(2) || '' }
     current[type].push(handle)
 
     if (current === window.Latte.root && willHotReload && !onDispose) {
