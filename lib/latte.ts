@@ -11,9 +11,10 @@ export type OnDispose = (cb: () => void) => void
 type mode = 'debug' | 'headless'
 type LatteOptions = { mode: mode; willHotReload: boolean }
 type TestContext = Partial<Record<string, FnOrGroup>> & {
+  currentTest: Test
   _suite: TestSuite
 }
-type Test = { fn: TestFn; fullName: string; suite: TestSuite; stack?: string }
+type Test = { fn: TestFn; name?: string, fullName: string; suite: TestSuite; stack?: string }
 type TestSetupCb = { fn: TestFn, stack?: string }
 type TestSuiteCallbacks = 'after' | 'afterEach' | 'before' | 'beforeEach'
 
@@ -40,10 +41,13 @@ export type Latte = {
   waitForCurrentTest: () => void
   flatten: (suite: TestSuite) => void
   run: (tests: Test[]) => void
-  currentTest: Test
-  currentContext: {
+  currentTest?: Test
+  currentContext?: {
     currentTest: Test
   }
+  cleanup: () => void
+  // The head and worker each define seperate onTest handlers
+  onTest?: (test: Test, err: unknown, log: string[]) => void
 }
 
 type describe = {
@@ -64,7 +68,7 @@ declare global {
     after: TestSetupFn
     helper: (name: string, cb: FnOrGroup) => void
     it: {
-      (name: string, cb?: FnOrGroup): void
+      (name: string, cb?: TestFn): void
       skip: () => void
       only: () => void
     }
@@ -75,7 +79,7 @@ declare global {
 // TODO refactor latte into a class, this will make the typing way easier
 
 // Right now there is nothing to export, but TS requires this to do the editing of Window
-;(function () {
+(function () {
   let mode: 'headless' | 'debug' // headless or debug
   let willHotReload = false
   let currentContext: null | TestContext = null // The context of the currently running test.
@@ -167,6 +171,7 @@ declare global {
           )
 
           currentContext = Object.create(suiteContext)
+          if (!currentContext) continue
           currentContext.currentTest = test
           Latte.currentContext = currentContext
 
@@ -185,7 +190,7 @@ declare global {
             // AfterEach generally does cleanup. If it fails, it's unsafe to run more tests.
             // By not catching exceptions here, we abort running and allow our chrome wrapper to reload.
             await applyCallbacks('afterEach', currentContext)
-            Latte.onTest(test, error, log)
+            Latte.onTest?.(test, error, log)
           }
 
           if (mode == 'debug') {
@@ -193,7 +198,7 @@ declare global {
               topDown: true,
             })
             await runWithTimeout(test, currentContext)
-            Latte.onTest(test, undefined, log)
+            Latte.onTest?.(test, undefined, log)
           }
 
           // signal that we've finished this test, in case we're aborting
@@ -291,7 +296,7 @@ declare global {
   }
   window.helper = helper
 
-  function it(name: string, fn?: FnOrGroup) {
+  function it(name: string, fn?: TestFn) {
     if (!fn) return
     const fullName = current.fullName + ' ' + name
     current.tests.push({
@@ -350,38 +355,39 @@ declare global {
     // figure out what the common ancestor is between both suites. If either suite is null
     // (happens at beginning and end of run) then commonAncestor will be undefined, and our
     // slice calls below will yield the full lineage.
-    let currLineage = lineage(currentSuite)
-    let nextLineage = lineage(nextSuite)
-    let commonAncestor = currLineage.filter(
+    const currLineage = lineage(currentSuite)
+    const nextLineage = lineage(nextSuite)
+    const commonAncestor = currLineage.filter(
       (x) => nextLineage.indexOf(x) >= 0
     )[0]
 
     // walk the lineage up to (but not including) the common ancestor, running after callbacks
-    let currTop = currLineage.indexOf(commonAncestor)
+    let currTop : number | undefined = currLineage.indexOf(commonAncestor)
     currTop = currTop == -1 ? undefined : currTop
     let chain = currLineage.slice(0, currTop)
-    for (suite of chain) {
-      for (cb of suite.after) await runWithTimeout(cb, context)
+    for (const suite of chain) {
+      for (const cb of suite.after) await runWithTimeout(cb, context)
       context = Object.getPrototypeOf(context)
     }
 
     // now walk down the lineage from right below the common ancestor to the new suite, running before callbacks
-    let nextTop = nextLineage.indexOf(commonAncestor)
+    let nextTop : number | undefined = nextLineage.indexOf(commonAncestor)
     nextTop = nextTop == -1 ? undefined : nextTop
     chain = nextLineage.slice(0, nextTop).reverse()
-    for (suite of chain) {
+    for (const suite of chain) {
       context = Object.create(context)
       context._suite = suite
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       context.timeout = function () {}
       attachHelpers(suite, context)
-      for (cb of suite.before) await runWithTimeout(cb, context)
+      for (const cb of suite.before) await runWithTimeout(cb, context)
     }
 
     return context
   }
 
   // Run user code with a timeout
-  async function runWithTimeout(cbOrTest: Test, context: TestContext) {
+  async function runWithTimeout(cbOrTest: Test | TestSetupCb, context: TestContext) {
     let hasFinished = false
     let timeoutPromise: Promise<unknown> | undefined = undefined
     const setTimeoutPromise = (ms: number) => {
