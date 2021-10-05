@@ -454,7 +454,7 @@ declare global {
     const arr: TestSuite[] = []
     while (currentSuite) {
       arr.push(currentSuite)
-      currentSuite = suite.parent
+      currentSuite = currentSuite.parent
     }
     return arr
   }
