@@ -406,10 +406,17 @@ declare global {
       setTimeoutPromise(ms)
     }
 
+      
+    if (!cbOrTest.fn) {
+      const currentStack = new Error().stack
+      throw new Error(`CbOrTest with undefined fn:
+        fn Stack: ${cbOrTest.stack}
+        current Stack: ${currentStack} 
+        cbOrTest: ${JSON.stringify(cbOrTest)}
+      `)
+    }
+    
     let runPromise = null
-    // TODO this is probably the point where 'call' is coming from
-    if (!cbOrTest.fn) throw new Error('No valid test')
-
     if (cbOrTest.fn.length > 0) {
       runPromise = new RealPromise((res) => cbOrTest.fn?.call(context, res))
     } else {
