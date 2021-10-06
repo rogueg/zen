@@ -240,8 +240,7 @@ declare global {
       after: [],
       afterEach: [],
       helpers: {},
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      timeout: () => {}, // TODO
+      timeout: () => {/* */}, // TODO
     }
 
     // Replace ourselves in the heirarchy. This happens when a test file is hot-reloaded.
@@ -256,12 +255,9 @@ declare global {
 
   window.describe = describe
   window.context = window.describe
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  describe.skip = function () {}
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  describe.only = function () {} // TODO
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  window.timeout = function () {} // TODO
+  describe.skip = function () {/* */}
+  describe.only = function () {/* */} // TODO
+  window.timeout = function () {/* */} // TODO
 
   function beforeEach(fn: TestFn, od?: OnDispose) {
     registerBeforeAfter('beforeEach', fn, od)
@@ -312,10 +308,8 @@ declare global {
       step = step.parent
     } while (step)
   }
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  it.skip = function () {}
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  it.only = function () {}
+  it.skip = function () {/* */}
+  it.only = function () {/* */}
   window.it = it
 
   function getStack(toPop: number) {
@@ -377,8 +371,7 @@ declare global {
     for (const suite of chain) {
       context = Object.create(context)
       context._suite = suite
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      context.timeout = function () {}
+      context.timeout = function () {/* */}
       attachHelpers(suite, context)
       for (const cb of suite.before) await runWithTimeout(cb, context)
     }
