@@ -70,7 +70,7 @@ if (config.webpack) {
 }
 
 Zen.indexHtml = function indexHtml(pageType, forS3) {
-  let deps = ['lib/latte.js']
+  let deps = ['build/latte.js']
   if (pageType == 'head') {
     deps.unshift('icons')
     deps.push(
@@ -80,7 +80,7 @@ Zen.indexHtml = function indexHtml(pageType, forS3) {
       'svelte/command.js'
     )
   }
-  deps.push(`lib/${pageType}.js`) // after Zen dependencies, but before user code
+  deps.push(`build/${pageType}.js`) // after Zen dependencies, but before user code
   let entries =
     (Zen.webpack && Zen.webpack.compile && Zen.webpack.compile.entrypoints) ||
     []

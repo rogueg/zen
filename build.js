@@ -33,7 +33,8 @@ function buildSimpleFile(file, outfile) {
     .build({
       entryPoints: [file],
       outfile: `build/${outfile}.js`,
-      platform: 'node',
+      platform: 'browser',
+      bundle: true,
       plugins: [nodeExternalsPlugin()],
       watch,
     })
@@ -41,6 +42,6 @@ function buildSimpleFile(file, outfile) {
 }
 
 buildSimpleFile('lib/webpack-client.js', 'webpack-client')
-buildSimpleFile('lib/latte.js', 'latte')
+buildSimpleFile('lib/latte.ts', 'latte')
 buildSimpleFile('lib/worker.js', 'worker')
 buildSimpleFile('lib/head.js', 'head')
