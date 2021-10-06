@@ -2,7 +2,10 @@
 // It needs to support two different modes: headless and debug
 // * headless runs in the background, and is optimized for speed.
 // * debug is optimized for an engineer with devtools open.
-export type TestFn = (this: TestContext, resolve?: (value: unknown) => void) => void
+export type TestFn = (
+  this: TestContext,
+  resolve?: (value: unknown) => void
+) => void
 type TestSetupFn = (test: TestFn, onDispose?: OnDispose) => void
 
 type TestGroup = Record<string, TestFn | unknown>
@@ -14,8 +17,14 @@ type TestContext = Partial<Record<string, FnOrGroup>> & {
   currentTest: Test
   _suite: TestSuite
 }
-type Test = { fn: TestFn; name?: string, fullName: string; suite: TestSuite; stack?: string }
-type TestSetupCb = { fn: TestFn, stack?: string }
+type Test = {
+  fn: TestFn
+  name?: string
+  fullName: string
+  suite: TestSuite
+  stack?: string
+}
+type TestSetupCb = { fn: TestFn; stack?: string }
 type TestSuiteCallbacks = 'after' | 'afterEach' | 'before' | 'beforeEach'
 
 type TestSuite = {
@@ -79,7 +88,7 @@ declare global {
 // TODO refactor latte into a class, this will make the typing way easier
 
 // Right now there is nothing to export, but TS requires this to do the editing of Window
-(function () {
+;(function () {
   let mode: 'headless' | 'debug' // headless or debug
   let willHotReload = false
   let currentContext: null | TestContext = null // The context of the currently running test.
@@ -218,7 +227,7 @@ declare global {
         await changeSuite(currentContext)
         currentContext = null
       }
-    }
+    },
   }
   window.Latte = Latte
 
@@ -240,7 +249,9 @@ declare global {
       after: [],
       afterEach: [],
       helpers: {},
-      timeout: () => {/* */}, // TODO
+      timeout: () => {
+        /* */
+      }, // TODO
     }
 
     // Replace ourselves in the heirarchy. This happens when a test file is hot-reloaded.
@@ -255,9 +266,15 @@ declare global {
 
   window.describe = describe
   window.context = window.describe
-  describe.skip = function () {/* */}
-  describe.only = function () {/* */} // TODO
-  window.timeout = function () {/* */} // TODO
+  describe.skip = function () {
+    /* */
+  }
+  describe.only = function () {
+    /* */
+  } // TODO
+  window.timeout = function () {
+    /* */
+  } // TODO
 
   function beforeEach(fn: TestFn, od?: OnDispose) {
     registerBeforeAfter('beforeEach', fn, od)
@@ -308,8 +325,12 @@ declare global {
       step = step.parent
     } while (step)
   }
-  it.skip = function () {/* */}
-  it.only = function () {/* */}
+  it.skip = function () {
+    /* */
+  }
+  it.only = function () {
+    /* */
+  }
   window.it = it
 
   function getStack(toPop: number) {
@@ -356,7 +377,7 @@ declare global {
     )[0]
 
     // walk the lineage up to (but not including) the common ancestor, running after callbacks
-    let currTop : number | undefined = currLineage.indexOf(commonAncestor)
+    let currTop: number | undefined = currLineage.indexOf(commonAncestor)
     currTop = currTop == -1 ? undefined : currTop
     let chain = currLineage.slice(0, currTop)
     for (const suite of chain) {
@@ -365,13 +386,15 @@ declare global {
     }
 
     // now walk down the lineage from right below the common ancestor to the new suite, running before callbacks
-    let nextTop : number | undefined = nextLineage.indexOf(commonAncestor)
+    let nextTop: number | undefined = nextLineage.indexOf(commonAncestor)
     nextTop = nextTop == -1 ? undefined : nextTop
     chain = nextLineage.slice(0, nextTop).reverse()
     for (const suite of chain) {
       context = Object.create(context)
       context._suite = suite
-      context.timeout = function () {/* */}
+      context.timeout = function () {
+        /* */
+      }
       attachHelpers(suite, context)
       for (const cb of suite.before) await runWithTimeout(cb, context)
     }
@@ -380,7 +403,10 @@ declare global {
   }
 
   // Run user code with a timeout
-  async function runWithTimeout(cbOrTest: Test | TestSetupCb, context: TestContext) {
+  async function runWithTimeout(
+    cbOrTest: Test | TestSetupCb,
+    context: TestContext
+  ) {
     let hasFinished = false
     let timeoutPromise: Promise<unknown> | undefined = undefined
     const setTimeoutPromise = (ms: number) => {
@@ -406,7 +432,6 @@ declare global {
       setTimeoutPromise(ms)
     }
 
-      
     if (!cbOrTest.fn) {
       const currentStack = new Error().stack
       throw new Error(`CbOrTest with undefined fn:
@@ -415,7 +440,7 @@ declare global {
         cbOrTest: ${JSON.stringify(cbOrTest)}
       `)
     }
-    
+
     let runPromise = null
     if (cbOrTest.fn.length > 0) {
       runPromise = new RealPromise((res) => cbOrTest.fn?.call(context, res))
