@@ -9,18 +9,23 @@ import * as Profiler from './profiler'
 yargs(process.argv.slice(2))
   .usage('$0 <cmd> [args]')
   .command('server', 'Run zen with a local server', (argv) => {
-    console.log("SERVER", argv)
+    console.log('SERVER', argv)
     new Server()
   })
-  .command('run', 'Run zen in the console', argv => {
+  .command('run', 'Run zen in the console', (argv) => {
     const args = argv.parseSync()
-    run({ logging: args.logging, rerun: args.rerun, debug: args.debug, lambdaCutoff: args.lambdaCutoff })
+    run({
+      logging: args.logging,
+      rerun: args.rerun,
+      debug: args.debug,
+      lambdaCutoff: args.lambdaCutoff,
+    })
   })
   .options({
     logging: { type: 'boolean', default: false },
     rerun: { type: 'number', default: 3 },
     lambdaCutoff: { type: 'number', default: 60 },
-    debug: { type: 'boolean', default: false }
+    debug: { type: 'boolean', default: false },
   })
   .parseSync()
 
@@ -72,8 +77,13 @@ async function run({ logging, rerun, debug, lambdaCutoff }) {
           testNames: group.tests,
           sessionId: Zen.config.sessionId,
         })
-        response
-          .forEach((r: { attempts: number; error: boolean; fullName: string }) => {
+        response.forEach(
+          (r: {
+            attempts: number
+            error: string
+            stack?: string
+            fullName: string
+          }) => {
             let metric = {
               name: 'log.test_failed',
               fields: {
@@ -88,12 +98,13 @@ async function run({ logging, rerun, debug, lambdaCutoff }) {
               metrics.push(metric)
             } else if (r.error) {
               failed++
-              console.log(
-                `🔴 ${r.fullName} ${r.error} (tried ${r.attempts || 1} times)`
-              )
+              console.log(`🔴 ${r.fullName} (tried ${r.attempts || 1} times)`)
+              console.log(`error: ${r.error}`)
+              console.log(`stack: ${r.stack}`)
               metrics.push(metric)
             }
-          })
+          }
+        )
       } catch (e) {
         console.error(e)
         failed += group.tests.length
