@@ -9,7 +9,7 @@ import * as Profiler from './profiler'
 type testFailure = {
   fullName: string
   attempts: number
-  error: string
+  error?: string
   time: number
 }
 
@@ -59,7 +59,7 @@ async function runTests (zen: Zen, opts: CLIOptions, tests : string[]) : Promise
     groups.map(async (group: { tests: string[] }): Promise<testFailure[]> => {
       try {
         const response = await Util.invoke('zen-workTests', {
-          deflakeLimit: opts.maxAttempts,
+          deflakeLimit: 2,
           testNames: group.tests,
           sessionId: zen.config.sessionId,
         })
@@ -87,6 +87,12 @@ function combineFailures (currentFailures : TestResultsMap, previousFailures ?: 
 
   // Combine the current failures with the previous failures
   const failures = { ...previousFailures }
+  // Reset the error state for all the previous tests, that way if they
+  // succeed it will report only as a flake
+  for (const testName in failures) {
+    failures[testName].error = undefined
+  }
+
   for (const testName in currentFailures) {
     const prevFailure = failures[testName]
     const curFailure = currentFailures[testName]
