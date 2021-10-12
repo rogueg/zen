@@ -143,7 +143,7 @@ async function run(zen: Zen, opts: CLIOptions) {
   let runsLeft = 5
   let failures : TestResultsMap | undefined
   console.log(`Running ${workingSet.length} tests`)
-  while (runsLeft > 0 || workingSet.length > 0) {
+  while (runsLeft > 0 && workingSet.length > 0) {
     runsLeft--
 
     const currentFailures = await runTests(zen, opts, workingSet)
