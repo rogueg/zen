@@ -59,7 +59,7 @@ async function runTests (zen: Zen, opts: CLIOptions, tests : string[]) : Promise
     groups.map(async (group: { tests: string[] }): Promise<testFailure[]> => {
       try {
         const response = await Util.invoke('zen-workTests', {
-          deflakeLimit: 2,
+          deflakeLimit: opts.maxAttempts,
           testNames: group.tests,
           sessionId: zen.config.sessionId,
         })
