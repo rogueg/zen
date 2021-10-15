@@ -138,14 +138,18 @@
 
   function onKeyDown(event) {
     event.stopPropagation()
-    if (this._isUpKey(event)) this.setSelected(this.get().selectedIndex - 1)
-    else if (this._isDownKey(event))
+    if (this._isUpKey(event)) {
+      this.setSelected(this.get().selectedIndex - 1)
+    } else if (this._isDownKey(event)) {
       this.setSelected(this.get().selectedIndex + 1)
-    else if (this._isEscapeKey(event)) store.closeCommand()
-    else if (event.keyCode == 13)
+    } else if (this._isEscapeKey(event)) {
+      this.store.closeCommand()
+    } else if (event.keyCode == 13) {
       // enter
       this.takeAction(this.get().selectedIndex)
-    else return
+    } else {
+      return
+    }
     event.preventDefault()
   }
 
@@ -169,11 +173,14 @@
 
   function takeAction(idx) {
     let sugg = this.get().suggestions[idx]
-    if (sugg.action) sugg.action()
-    else if (sugg.type == 'describe')
+    if (sugg.action) {
+      sugg.action()
+    } else if (sugg.type == 'describe') {
       this.store.filterTests({ grep: sugg.title, run: true })
-    else if (sugg.type == 'test') this.store.focusTest(sugg.title)
-    store.closeCommand()
+    } else if (sugg.type == 'test') {
+      this.store.focusTest(sugg.title)
+    }
+    this.store.closeCommand()
   }
 
   function setSelected(idx) {
