@@ -33,6 +33,10 @@ export type Zen = {
 
     // TODO flesh this out
     webpack: any
+    chrome?: {
+      width?: number
+      height?: number
+    }
   }
 }
 
