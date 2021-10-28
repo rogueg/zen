@@ -40,7 +40,7 @@ export type Zen = {
   }
 }
 
-export default async function initZen (configFilePath: string) : Promise<Zen> {
+export default async function initZen(configFilePath: string): Promise<Zen> {
   // TODO fix the arg part, the order for shifting was broken because of import order
   //
   let configFile = require(path.join(process.cwd(), configFilePath))
@@ -49,7 +49,7 @@ export default async function initZen (configFilePath: string) : Promise<Zen> {
   }
 
   const Zen: Partial<Zen> = ((global as any).Zen = {
-    config: configFile
+    config: configFile,
   })
 
   // load the config with some defaults

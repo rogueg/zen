@@ -22,40 +22,50 @@ export type CLIOptions = {
 
 yargs(process.argv.slice(2))
   .usage('$0 <cmd> [configFile]')
-  .command(['local [configFile]', 'server [configFile]'], 'Run zen with a local server', (yargs) => {
-    yargs.positional('file', {
-      type: 'string',
-      describe: 'Path to the config file',
-    })
-  }, async (argv : CLIOptions) => {
-    await initZen(argv.configFile)
-    new Server()
-  })
-  .command('remote [configFile]', 'Run zen in the console', (yargs) => {
-    yargs.positional('file', {
-      type: 'string',
-      describe: 'Path to the config file',
-    })
-  }, async (argv : CLIOptions) => {
-    const zen = await initZen(argv.configFile)
-    run(zen, argv)
-  })
+  .command(
+    ['local [configFile]', 'server [configFile]'],
+    'Run zen with a local server',
+    (yargs) => {
+      yargs.positional('file', {
+        type: 'string',
+        describe: 'Path to the config file',
+      })
+    },
+    async (argv: CLIOptions) => {
+      await initZen(argv.configFile)
+      new Server()
+    }
+  )
+  .command(
+    'remote [configFile]',
+    'Run zen in the console',
+    (yargs) => {
+      yargs.positional('file', {
+        type: 'string',
+        describe: 'Path to the config file',
+      })
+    },
+    async (argv: CLIOptions) => {
+      const zen = await initZen(argv.configFile)
+      run(zen, argv)
+    }
+  )
   .options({
     logging: { type: 'boolean', default: false },
     maxAttempts: { type: 'number', default: 3 },
     debug: { type: 'boolean', default: false },
-  })
-  .argv
-  
+  }).argv
+
 type TestResultsMap = Record<string, testFailure>
 
-async function runTests (zen: Zen, opts: CLIOptions, tests : string[]) : Promise<TestResultsMap> {
-  const groups = zen.journal.groupTests(
-    tests,
-    zen.config.lambdaConcurrency
-  )
+async function runTests(
+  zen: Zen,
+  opts: CLIOptions,
+  tests: string[]
+): Promise<TestResultsMap> {
+  const groups = zen.journal.groupTests(tests, zen.config.lambdaConcurrency)
 
-  const failedTests : testFailure[][] = await Promise.all(
+  const failedTests: testFailure[][] = await Promise.all(
     groups.map(async (group: { tests: string[] }): Promise<testFailure[]> => {
       try {
         const response = await Util.invoke('zen-workTests', {
@@ -67,22 +77,29 @@ async function runTests (zen: Zen, opts: CLIOptions, tests : string[]) : Promise
       } catch (e) {
         console.error(e)
         return group.tests.map((name: string) => {
-          return { fullName: name, attempts: 0, error: 'zen failed to run this group', time: 0 }
+          return {
+            fullName: name,
+            attempts: 0,
+            error: 'zen failed to run this group',
+            time: 0,
+          }
         })
       }
     })
   )
-  
-  return failedTests.flat().reduce(
-    (acc: Record<string, testFailure>, result: testFailure) => {
+
+  return failedTests
+    .flat()
+    .reduce((acc: Record<string, testFailure>, result: testFailure) => {
       acc[result.fullName] = result
       return acc
-    },
-    {}
-  )
+    }, {})
 }
 
-function combineFailures (currentFailures : TestResultsMap, previousFailures ?: TestResultsMap) : TestResultsMap {
+function combineFailures(
+  currentFailures: TestResultsMap,
+  previousFailures?: TestResultsMap
+): TestResultsMap {
   if (!previousFailures) return currentFailures
 
   // Combine the current failures with the previous failures
@@ -108,92 +125,102 @@ function combineFailures (currentFailures : TestResultsMap, previousFailures ?: 
       }
     }
   }
-  
+
   return failures
 }
 
 async function run(zen: Zen, opts: CLIOptions) {
-  let t0 = Date.now()
-  if (zen.webpack) {
-    console.log('Webpack building')
-    let previousPercentage = 0
-    zen.webpack.on(
-      'status',
-      (_status: string, stats: { message: string; percentage: number }) => {
-        if (stats.percentage && stats.percentage > previousPercentage) {
-          previousPercentage = stats.percentage
-          console.log(`${stats.percentage}% ${stats.message}`)
+  try {
+    let t0 = Date.now()
+    if (zen.webpack) {
+      console.log('Webpack building')
+      let previousPercentage = 0
+      zen.webpack.on(
+        'status',
+        (_status: string, stats: { message: string; percentage: number }) => {
+          if (stats.percentage && stats.percentage > previousPercentage) {
+            previousPercentage = stats.percentage
+            console.log(`${stats.percentage}% ${stats.message}`)
+          }
         }
-      }
-    )
-    await zen.webpack.build()
-    console.log(`Took ${Date.now() - t0}ms`)
-  }
-
-  t0 = Date.now()
-  console.log('Syncing to S3')
-  zen.s3Sync.on(
-    'status',
-    (msg: string) => (opts.debug || process.env.DEBUG) && console.log(msg)
-  )
-  await zen.s3Sync.run(zen.indexHtml('worker', true))
-  console.log(`Took ${Date.now() - t0}ms`)
-
-  t0 = Date.now()
-  console.log('Getting test names')
-  let workingSet : string[] = await Util.invoke('zen-listTests', {
-    sessionId: zen.config.sessionId,
-  })
-
-  // In case there is an infinite loop, this should brick the test running
-  let runsLeft = 5
-  let failures : TestResultsMap | undefined
-  console.log(`Running ${workingSet.length} tests`)
-  while (runsLeft > 0 && workingSet.length > 0) {
-    runsLeft--
-
-    const currentFailures = await runTests(zen, opts, workingSet)
-    failures = combineFailures(currentFailures, failures)
-
-    const testsToContinue = []
-    for (const testName in failures) {
-      const failure = failures[testName]
-      if (!failure) continue
-      if (failure.error && failure.attempts < opts.maxAttempts) {
-        testsToContinue.push(failure.fullName)
-      }
+      )
+      await zen.webpack.build()
+      console.log(`Took ${Date.now() - t0}ms`)
     }
-    workingSet = testsToContinue
-    if (workingSet.length > 0) console.log(`Trying to rerun ${workingSet.length} tests`)
-  }
-  
-  const metrics = []
-  let failCount = 0
-  for (const test of Object.values(failures || {})) {
-    metrics.push({
-      name: 'log.test_failed',
-      fields: {
-        value: test.attempts,
-        testName: test.fullName,
-        time: test.time,
-        error: test.error,
-      },
+
+    t0 = Date.now()
+    console.log('Syncing to S3')
+    zen.s3Sync.on(
+      'status',
+      (msg: string) => (opts.debug || process.env.DEBUG) && console.log(msg)
+    )
+    await zen.s3Sync.run(zen.indexHtml('worker', true))
+    console.log(`Took ${Date.now() - t0}ms`)
+
+    t0 = Date.now()
+    console.log('Getting test names')
+    let workingSet: string[] = await Util.invoke('zen-listTests', {
+      sessionId: zen.config.sessionId,
     })
 
-    if (test.error) {
-      failCount += 1
-      console.log(
-        `🔴 ${test.fullName} ${test.error} (tried ${test.attempts || 1} times)`
-      )
-    } else if (test.attempts > 1) {
-      console.log(`⚠️ ${test.fullName} (flaked ${test.attempts - 1}x)`)
-    }
-  }
+    // In case there is an infinite loop, this should brick the test running
+    let runsLeft = 5
+    let failures: TestResultsMap | undefined
+    console.log(`Running ${workingSet.length} tests`)
+    while (runsLeft > 0 && workingSet.length > 0) {
+      runsLeft--
 
-  if (opts.logging) Profiler.logBatch(metrics)
-  console.log(`Took ${Date.now() - t0}ms`)
-  console.log(
-    `${failCount ? '😢' : '🎉'} ${failCount} failed test${failCount === 1 ? '' : 's'}`
-  )
-  process.exit(failCount ? 1 : 0)
+      const currentFailures = await runTests(zen, opts, workingSet)
+      failures = combineFailures(currentFailures, failures)
+
+      const testsToContinue = []
+      for (const testName in failures) {
+        const failure = failures[testName]
+        if (!failure) continue
+        if (failure.error && failure.attempts < opts.maxAttempts) {
+          testsToContinue.push(failure.fullName)
+        }
+      }
+      workingSet = testsToContinue
+      if (workingSet.length > 0)
+        console.log(`Trying to rerun ${workingSet.length} tests`)
+    }
+
+    const metrics = []
+    let failCount = 0
+    for (const test of Object.values(failures || {})) {
+      metrics.push({
+        name: 'log.test_failed',
+        fields: {
+          value: test.attempts,
+          testName: test.fullName,
+          time: test.time,
+          error: test.error,
+        },
+      })
+
+      if (test.error) {
+        failCount += 1
+        console.log(
+          `🔴 ${test.fullName} ${test.error} (tried ${
+            test.attempts || 1
+          } times)`
+        )
+      } else if (test.attempts > 1) {
+        console.log(`⚠️ ${test.fullName} (flaked ${test.attempts - 1}x)`)
+      }
+    }
+
+    if (opts.logging) Profiler.logBatch(metrics)
+    console.log(`Took ${Date.now() - t0}ms`)
+    console.log(
+      `${failCount ? '😢' : '🎉'} ${failCount} failed test${
+        failCount === 1 ? '' : 's'
+      }`
+    )
+    process.exit(failCount ? 1 : 0)
+  } catch (e) {
+    console.error(e)
+    process.exit(1)
+  }
 }
