@@ -28,12 +28,12 @@ esbuild
   })
   .catch(() => process.exit(1))
 
-function buildSimpleFile(file, outfile) {
+function buildSimpleFile(file, outfile, platform = 'browser') {
   esbuild
     .build({
       entryPoints: [file],
       outfile: `build/${outfile}.js`,
-      platform: 'browser',
+      platform,
       bundle: true,
       plugins: [nodeExternalsPlugin()],
       watch,
@@ -41,7 +41,7 @@ function buildSimpleFile(file, outfile) {
     .catch(() => process.exit(1))
 }
 
-buildSimpleFile('lib/webpack-client.js', 'webpack-client')
+buildSimpleFile('lib/webpack/webpack-client.ts', 'webpack-client', 'node')
 buildSimpleFile('lib/latte.ts', 'latte')
 buildSimpleFile('lib/worker.js', 'worker')
 buildSimpleFile('lib/head.js', 'head')

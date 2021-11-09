@@ -75,11 +75,6 @@ export default async function initZen(configFilePath: string): Promise<Zen> {
   // Without this, node limits our requests and slows down running on lambda
   https.globalAgent.maxSockets = 2000 // TODO multiplex over fewer connections
 
-  if (config.webpack) {
-    // boot up webpack (if configured)
-    Zen.webpack = new WebpackAdapter()
-  }
-
   Zen.indexHtml = function indexHtml(pageType, forS3) {
     let deps = ['build/latte.js']
     if (pageType == 'head') {
@@ -124,6 +119,11 @@ export default async function initZen(configFilePath: string): Promise<Zen> {
     </script>`)
 
     return Zen.config.htmlTemplate.replace('ZEN_SCRIPTS', scripts.join('\n'))
+  }
+
+  if (config.webpack) {
+    // boot up webpack (if configured)
+    Zen.webpack = new WebpackAdapter(config.webpack)
   }
 
   // TODO clean this up to remove the casting
