@@ -25,6 +25,7 @@ esbuild
     platform: 'node',
     plugins: [nodeExternalsPlugin()],
     watch,
+    external: ['chrome-aws-lambda', 'puppeteer-core'],
   })
   .catch(() => process.exit(1))
 
@@ -36,6 +37,7 @@ function buildSimpleFile(file, outfile, platform = 'browser') {
       platform,
       bundle: true,
       plugins: [nodeExternalsPlugin()],
+      external: ['chrome-aws-lambda', 'puppeteer-core'],
       watch,
     })
     .catch(() => process.exit(1))

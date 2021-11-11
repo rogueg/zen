@@ -1,0 +1,7 @@
+{
+  "extends": "../tsconfig.json",
+  "compileOptions": {
+    "target": "node",
+    "checkJs": true
+  }
+}

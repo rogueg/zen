@@ -9,7 +9,8 @@
     "format": "prettier --write --ignore-unknown .",
     "build": "node ./build.js",
     "start": "node ./build.js -w",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "tools:upload-lambda": "ts-node ./tools/upload_lambda.ts"
   },
   "repository": {
     "type": "git",
@@ -34,7 +35,7 @@
     "aws-sdk": "^2.238.1",
     "btoa": "^1.2.1",
     "chrome-launcher": "^0.10.2",
-    "chrome-remote-interface": "^0.27.1",
+    "chrome-remote-interface": "^0.28.1",
     "connect": "^3.6.1",
     "fuzzysort": "^1.1.4",
     "klaw": "^2.1.1",
@@ -52,14 +53,19 @@
     "@types/webpack": "^4.41.31",
     "@types/webpack-dev-server": "^3",
     "@types/webpack-env": "^1.16.3",
+    "@types/adm-zip": "^0.4.34",
+    "@types/aws-sdk": "^2.7.0",
     "@types/yargs": "^17.0.2",
     "@typescript-eslint/eslint-plugin": "^4.31.2",
     "@typescript-eslint/parser": "^4.31.2",
+    "adm-zip": "^0.5.9",
     "chai": "^3.5.0",
+    "chrome-aws-lambda": "2.1.1",
     "esbuild": "^0.12.28",
     "esbuild-node-externals": "^1.3.0",
     "eslint": "^7.32.0",
     "prettier": "^2.4.1",
+    "ts-node": "^10.4.0",
     "typescript": "^4.4.3",
     "webpack": "4.46.0",
     "webpack-dev-server": "^3.4"

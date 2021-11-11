@@ -114,10 +114,10 @@ Resources:
       Handler: lambda.workTests
       MemorySize: 1536
       Role: !GetAtt ['LambdaRole', 'Arn']
-      Runtime: nodejs8.10
+      Runtime: nodejs12.x
       Timeout: 60
       Layers:
-        - arn:aws:lambda:us-west-1:977179729379:layer:chrome:1
+        - arn:aws:lambda:us-west-1:977179729379:layer:chrome:16
       Environment:
         Variables:
           ASSET_BUCKET: !Ref AssetBucket
@@ -135,10 +135,10 @@ Resources:
       Handler: lambda.listTests
       MemorySize: 1536
       Role: !GetAtt [LambdaRole, Arn]
-      Runtime: nodejs8.10
+      Runtime: nodejs12.x
       Timeout: 60
       Layers:
-        - arn:aws:lambda:us-west-1:977179729379:layer:chrome:1
+        - arn:aws:lambda:us-west-1:977179729379:layer:chrome:16
       Environment:
         Variables:
           ASSET_BUCKET: !Ref AssetBucket
@@ -156,7 +156,7 @@ Resources:
       Handler: lambda.sync
       MemorySize: 1536
       Role: !GetAtt [LambdaRole, Arn]
-      Runtime: nodejs8.10
+      Runtime: nodejs12.x
       Timeout: 60
       Environment:
         Variables:
@@ -172,7 +172,7 @@ Resources:
       Handler: lambda.routeRequest
       MemorySize: 1536
       Role: !GetAtt [LambdaRole, Arn]
-      Runtime: nodejs8.10
+      Runtime: nodejs12.x
       Timeout: 60
       Environment:
         Variables:
