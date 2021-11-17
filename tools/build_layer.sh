@@ -6,8 +6,10 @@ rm -rf build/chrome-aws-lambda && rm -rf build/layer.zip
 git clone https://github.com/alixaxel/chrome-aws-lambda.git build/chrome-aws-lambda
 cd build/chrome-aws-lambda
 
-# version 2.1.1, chrome 80
-git checkout ba8cde3f992fc387ede9b047afee9a4f3eb5ca5c
+# version 8.2.0, chrome 90
+git checkout 5201d6bfe62e0606c5f24229a94f04a059ea7b30
+# Locks their typescript version, the build breaks with anything after this version
+npm install typescript@4.3.2
 make ../layer.zip
 
 echo "
