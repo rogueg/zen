@@ -12,7 +12,10 @@ type TestGroup = Record<string, TestFn | unknown>
 export type FnOrGroup = TestFn | TestGroup
 export type OnDispose = (cb: () => void) => void
 type mode = 'debug' | 'headless'
-type LatteOptions = { mode: mode; willHotReload: boolean }
+type helpers = {
+  resizeWindow: (dimensions: { width: number, height: number }) => void
+}
+type LatteOptions = { mode: mode; willHotReload: boolean; helpers?: helpers }
 type TestContext = Partial<Record<string, FnOrGroup>> & {
   currentTest: Test
   _suite: TestSuite
@@ -91,6 +94,7 @@ declare global {
 ;(function () {
   let mode: 'headless' | 'debug' // headless or debug
   let willHotReload = false
+  let helpers: helpers | undefined = undefined
   let currentContext: null | TestContext = null // The context of the currently running test.
   let currentTimeout: number
 
@@ -130,6 +134,7 @@ declare global {
     setup: function latteSetup(opts) {
       mode = opts.mode
       willHotReload = opts.willHotReload
+      helpers = opts.helpers
     },
     waitForCurrentTest: async function waitForCurrentTest() {
       whenCurrentTestFinished && (await whenCurrentTestFinished)
@@ -426,7 +431,7 @@ declare global {
     }
     setTimeoutPromise(10000)
 
-    context.zen = {}
+    context.zen = helpers || {}
     context.zen.extendRemoteTimeout = (ms: number) => {
       clearTimeout(currentTimeout)
       setTimeoutPromise(ms)
