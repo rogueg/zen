@@ -1,6 +1,6 @@
 {
   "name": "@superhuman/zen",
-  "version": "0.3.16",
+  "version": "0.3.17",
   "description": "Karma replacement that runs your tests in seconds",
   "main": "lib/cli.js",
   "scripts": {
