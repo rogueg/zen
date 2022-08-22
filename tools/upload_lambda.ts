@@ -5,8 +5,9 @@ const esbuild = require('esbuild')
 
 // Create a the zip file
 const zip = new AdmZip()
-const files = ['lambda', 'chrome']
+const files = ['lambda.js', 'chrome_wrapper.ts']
 files.forEach((file) => {
+  const [basename, filetype] = file.split('.')
   // TODO make this use partial esbuild config
   let bundleConfig: any = {
     bundle: false,
@@ -19,12 +20,12 @@ files.forEach((file) => {
     }
   }
   esbuild.buildSync({
-    entryPoints: [path.join(__dirname, `../lib/${file}.js`)],
+    entryPoints: [path.join(__dirname, `../lib/${basename}.${filetype}`)],
     platform: 'node',
-    outfile: path.join(__dirname, '../build/lambda_code', file + '.js'),
+    outfile: path.join(__dirname, '../build/lambda_code', basename + '.js'),
     ...bundleConfig,
   })
-  zip.addLocalFile(path.join(__dirname, `../build/lambda_code/${file}.js`))
+  zip.addLocalFile(path.join(__dirname, `../build/lambda_code/${basename}.js`))
 })
 
 zip.writeZip(path.join(__dirname, '../build/lambda_code/lambda-code.zip'))
@@ -46,7 +47,8 @@ AWS.config.update({
 const s3 = new AWS.S3({ params: { Bucket: assetBucket } })
 
 // Send the zip up to S3
-const key = 'lambda-code.zip'
+// TODO revert name to lambda-code
+const key = 'lambda-code-puppeteer.zip'
 const body = zip.toBuffer()
 const contentType = 'application/zip, application/octet-stream'
 s3.upload({ Key: key, Body: body, ContentType: contentType } as any)
