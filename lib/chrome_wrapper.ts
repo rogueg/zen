@@ -407,7 +407,7 @@ class ChromeTab {
             Key: key,
           })
           .promise()
-        const body = response.Body?.toString()
+        const body = response.Body as Buffer
 
         await request.respond({
           status: 200,
