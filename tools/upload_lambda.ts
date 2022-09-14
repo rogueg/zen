@@ -5,7 +5,7 @@ const esbuild = require('esbuild')
 
 // Create a the zip file
 const zip = new AdmZip()
-const files = ['lambda.js', 'chrome_wrapper.ts']
+const files = ['lambda.ts', 'chrome_wrapper.ts']
 files.forEach((file) => {
   const [basename, filetype] = file.split('.')
   // TODO make this use partial esbuild config
@@ -28,7 +28,7 @@ files.forEach((file) => {
   zip.addLocalFile(path.join(__dirname, `../build/lambda_code/${basename}.js`))
 })
 
-zip.writeZip(path.join(__dirname, '../build/lambda_code/lambda-code.zip'))
+zip.writeZip(path.join(__dirname, '../build/lambda_code/lambda-code-timeout.zip'))
 
 const assetBucket = process.env.ASSET_BUCKET
 const secretAccessKey = process.env.SECRET_ACCESS_KEY
@@ -48,7 +48,7 @@ const s3 = new AWS.S3({ params: { Bucket: assetBucket } })
 
 // Send the zip up to S3
 // TODO revert name to lambda-code
-const key = 'lambda-code-puppeteer.zip'
+const key = 'lambda-code-timeout.zip'
 const body = zip.toBuffer()
 const contentType = 'application/zip, application/octet-stream'
 s3.upload({ Key: key, Body: body, ContentType: contentType } as any)

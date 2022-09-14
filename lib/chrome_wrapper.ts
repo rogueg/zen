@@ -1,6 +1,13 @@
 import Puppeteer from 'puppeteer-core'
 import { S3 } from 'aws-sdk'
 
+export type TestResult = {
+  error?: string
+  time: number
+  fullName: string
+  log?: log
+}
+
 const localChromeFlags = ['--headless', '--disable-gpu']
 const lambdaChromeFlags = [
   '--autoplay-policy=user-gesture-required',
@@ -75,6 +82,7 @@ type WindowSize = {
 type ChromeTabConfig = {
   skipHotReload: boolean
   failOnExceptions: boolean
+  logging: boolean
 }
 type ChromeTabState =
   | 'starting'
@@ -86,7 +94,9 @@ type ChromeTabState =
 type log = { console: string[] }
 type Test = {
   testName: string
-  logs: { console: string }
+  logs?: { console: string }
+  batch?: Test[]
+  runId: string
 }
 type FileManifest = {
   index: string
@@ -110,14 +120,23 @@ class ChromeTab {
     private manifest?: FileManifest,
     private s3?: S3
   ) {
-    this.config = { skipHotReload: false, failOnExceptions: false, ...config }
+    this.config = {
+      skipHotReload: false,
+      failOnExceptions: false,
+      logging: false,
+      ...config,
+    }
     this.state = 'starting'
     this.timeout = setTimeout(this.onTimeout, 10_000)
     this.requestMap = {}
+    this.setupPage()
+  }
+  
+  setupPage () {
     this.page.setRequestInterception(true)
     this.page.on('request', this.onRequestPaused)
     this.page.on('console', async (message) => {
-      console.log(message)
+      if (this.config.logging) console.log('Log:', message.text())
       this.onMessageAdded(message.text())
     })
     this.page.on('error', (error) => {
@@ -144,14 +163,31 @@ class ChromeTab {
       this.reload()
     }
   }
+  
+  async awaitLoad () {
+    let resolve : () => void
+    const handler = (message : Puppeteer.ConsoleMessage) => {
+      const text = message.text() 
+      if (text.startsWith('Zen.idle')) resolve()
+    }
+    const promise = new Promise((res, rej) => {
+      resolve = () => {
+        this.page.off('console', handler)
+        res(undefined) 
+      }
+    })
+    
+    this.page.on('console', handler)
+    return promise
+  }
 
-  resolveWork?: (value: unknown) => void
-  setTest(test: Test) {
+  resolveWork?: (value: TestResult | null) => void
+  setTest(test: Test): Promise<TestResult | null> {
     if (this.test) {
       this.resolveWork?.(null)
     }
 
-    const promise = new Promise((res) => {
+    const promise = new Promise<TestResult | null>((res) => {
       this.resolveWork = res
     })
     this.test = test
@@ -178,7 +214,7 @@ class ChromeTab {
   }
 
   _evaluate(code: string) {
-    return this._retryOnClose(() => this.page.evaluate(code))
+    return this._retry(() => this.page.evaluate(code))
   }
 
   // Attempt to hot reload the latest code
@@ -199,8 +235,8 @@ class ChromeTab {
     this.startAt = new Date()
     this.timeout = setTimeout(this.onTimeout, 20_000)
 
-    await this._retryOnClose(() => this.page.focus('body'))
-    this.page.evaluate(`Zen.run(${JSON.stringify(this.test)})`)
+    await this._retry(() => this.page.focus('body'))
+    await this._evaluate(`Zen.run(${JSON.stringify(this.test)})`)
   }
 
   badCodeError?: string
@@ -243,14 +279,19 @@ class ChromeTab {
     else if (this.listRequest) this.listTests()
   }
 
-  async _retryOnClose<A>(cb: () => A): Promise<A | undefined> {
+  // Retries code that would be executed on the page if a couple common failure cases happen
+  async _retry<A>(cb: () => A): Promise<A | undefined> {
     try {
       return await cb()
     } catch (e) {
-      if (e instanceof Error && e.message.includes('Session closed')) {
+      if (!(e instanceof Error)) return 
+      if (e.message.includes('Session closed') || e.message.includes('Zen.run is not a function')) {
         const oldUrl = this.page.url()
         this.page = await this.browser.newPage()
-        await this.page.goto(oldUrl)
+        this.setupPage()
+
+        this.page.goto(oldUrl)
+        await this.awaitLoad()
         return await cb()
       }
     }
@@ -263,7 +304,7 @@ class ChromeTab {
     this.requestMap = {}
     console.log(`[${this.id}] reloading`)
     // TODO navigate to the correct url, in case the test has changed our location
-    return await this._retryOnClose(() => this.page.reload())
+    return await this._retry(() => this.page.reload())
   }
 
   onTimeout = () => {
@@ -320,19 +361,19 @@ class ChromeTab {
     fullName: string
     log?: log
   }) {
+    if (!this.startAt) {
+      return this.resolveWork?.(null)
+    }
     const message = {
       ...rawMessage,
-      time: this.startAt && new Date().getTime() - this.startAt.getTime(),
+      time: new Date().getTime() - this.startAt.getTime(),
     }
 
     if (!this.test?.logs || !this.test.logs.console) {
       delete message.log
     }
 
-    if (this.resolveWork) {
-      this.resolveWork(message)
-    }
-
+    this.resolveWork?.(message)
     this.resolveWork = undefined
     this.test = undefined
   }
@@ -412,7 +453,7 @@ class ChromeTab {
         await request.respond({
           status: 200,
           contentType: response.ContentType,
-          body,
+          body
         })
       } catch (e) {
         // There is a chance for a redirect or new tab while this s3 request is going through
@@ -473,7 +514,7 @@ export default class ChromeWrapper {
   async openTab(
     url: string,
     id: string,
-    config: ChromeTabConfig,
+    config: Partial<ChromeTabConfig>,
     manifest?: FileManifest
   ): Promise<ChromeTab> {
     if (!this.browser) throw new Error('Browser not setup')

@@ -1,6 +1,6 @@
 import * as path from 'path'
 import * as https from 'https'
-import * as Util from './util'
+import { ensureDir } from './util'
 import * as AWS from 'aws-sdk'
 import S3Sync from './s3-sync'
 import Journal from './journal'
@@ -73,7 +73,7 @@ export default async function initZen(configFilePath: string): Promise<Zen> {
 
   // tmpDir is where we cache files between runs
   config.tmpDir = config.tmpDir || path.join(config.appRoot, '.zen')
-  Util.ensureDir(config.tmpDir)
+  ensureDir(config.tmpDir)
   console.log('Using tmpDir', config.tmpDir)
 
   AWS.config.update(config.aws)
