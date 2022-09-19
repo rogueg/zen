@@ -1,5 +1,5 @@
 import type ChromeWrapper from './chrome_wrapper'
-import type { TestResult } from './chrome_wrapper'
+import type { ChromeTab, TestResult } from './chrome_wrapper'
 import { Context } from 'aws-lambda'
 import AWS from 'aws-sdk'
 // TODO test if this works
@@ -9,9 +9,10 @@ type WorkTestOpts = {
   testNames: string[]
   deflakeLimit?: number
   runId: string
+  oldResults?: WorkTestsResult
 }
-type WorkTestsResult = {
-  results: Record<string, TestResult[]>,
+export type WorkTestsResult = {
+  results: Record<string, TestResult[]>
   logStreamName: string
 }
 export const workTests = async (
@@ -30,17 +31,17 @@ export const workTests = async (
   // So we can log lambda errors with the test that caused them
   let activeTest
   const getRemainingTests = () =>
-      tests.filter((test) => {
-        const testResults = results[test]
-        const lastRun = testResults[testResults.length - 1]
-        return !lastRun || lastRun.error
-      })
+    tests.filter((test) => {
+      const testResults = results[test]
+      const lastRun = testResults[testResults.length - 1]
+      return !lastRun || lastRun.error
+    })
 
   try {
-    const timeout = setTimeout(() => {
-      throw new Error("Lambda Timeout")
-    }, remainingTime - 5_000)
-    const runTestSet = async (tests: string[]) => {
+    const timeout = new Promise<boolean>((resolve) =>
+      setTimeout(() => resolve(true), remainingTime - 5_000)
+    )
+    const runTestSet = async (tests: string[], tab : ChromeTab) => {
       for (const testName of tests) {
         activeTest = testName
         const testOpts = { runId: opts.runId, testName }
@@ -56,18 +57,25 @@ export const workTests = async (
         results[testOpts.testName].push(r)
       }
     }
-    
-    const tab = await prepareChrome(opts)
-    const deflakeLimit = opts.deflakeLimit || 3
-    for (let attempt = 1; attempt <= deflakeLimit; attempt++) {
-      const remainingTests = getRemainingTests()
-      console.log("REMAINING TESTS", remainingTests)
-      if (remainingTests.length === 0) break
 
-      await runTestSet(remainingTests)
+    const run = async () => {
+      const tab = await prepareChrome(opts)
+      const deflakeLimit = opts.deflakeLimit || 3
+      for (let attempt = 1; attempt <= deflakeLimit; attempt++) {
+        const remainingTests = getRemainingTests()
+        console.log('REMAINING TESTS', remainingTests)
+        if (remainingTests.length === 0) break
+
+        await runTestSet(remainingTests, tab)
+      }
+
+      // Return false to indicate no timeout
+      return false
     }
+    
+    const didTimeout = await Promise.race([run(), timeout])
+    if (didTimeout) throw new Error('Lambda Timeout')
 
-    clearTimeout(timeout)
     return {
       results,
       logStreamName: context.logStreamName,
@@ -75,23 +83,26 @@ export const workTests = async (
   } catch (e) {
     if (e instanceof Error) {
       const message = e.message
-      if (message === "Lambda Timeout" || message.includes("TimeoutError")) {
+      if (
+        message.includes('Lambda Timeout') ||
+        message.includes('TimeoutError')
+      ) {
         const remainingTests = getRemainingTests()
-        remainingTests.forEach(test => {
+        remainingTests.forEach((test) => {
           results[test].push({
             error: message,
             fullName: test,
-            time: 0
+            time: 0,
           })
         })
       } else if (activeTest) {
         results[activeTest].push({
           error: e.message,
           fullName: activeTest,
-          time: 0 // TODO figure out a good way to get time
+          time: 0, // TODO figure out a good way to get time
         })
       } else {
-        console.log("UNKOWN ERROR")
+        console.log('UNKOWN ERROR')
         console.error(e)
       }
     }
@@ -185,14 +196,14 @@ async function prepareChrome({ sessionId }: { sessionId: string }) {
 
   // Start chrome and fetch the manifest in parallel
   if (!wrapper) {
-    console.log("Setting up Chrome")
+    console.log('Setting up Chrome')
     const ChromeWrapper = require('./chrome_wrapper').default
     wrapper = new ChromeWrapper()
     await wrapper.launchLambda()
   } else {
-    console.log("Chrome is already setup!")
+    console.log('Chrome is already setup!')
   }
-  
+
   console.log('Opening tab')
   return await wrapper.openTab(
     process.env.GATEWAY_URL + '/index.html',

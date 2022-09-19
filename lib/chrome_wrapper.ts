@@ -104,7 +104,7 @@ type FileManifest = {
   assetUrl: string
 }
 
-class ChromeTab {
+export class ChromeTab {
   codeHash?: string
   test?: Test
   timeout: NodeJS.Timeout

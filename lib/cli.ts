@@ -5,6 +5,7 @@ import initZen, { Zen } from './index'
 import yargs from 'yargs'
 import { invoke } from './util.js'
 import * as Profiler from './profiler'
+import { workTests } from './util'
 
 type testFailure = {
   fullName: string
@@ -68,7 +69,7 @@ async function runTests(
   const failedTests: testFailure[][] = await Promise.all(
     groups.map(async (group: { tests: string[] }): Promise<testFailure[]> => {
       try {
-        const response = await Util.invoke(zen.config.lambdaNames.workTests, {
+        const response = await workTests({
           deflakeLimit: opts.maxAttempts,
           testNames: group.tests,
           sessionId: zen.config.sessionId,

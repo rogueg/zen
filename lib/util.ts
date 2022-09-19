@@ -7,7 +7,7 @@ import svelte from 'svelte'
 import WebSocket from 'ws'
 import fetch from 'node-fetch'
 import type http from 'http'
-import { AWSError } from 'aws-sdk'
+import type { WorkTestsResult } from './lambda'
 
 export function serveWith404(dir: string): connect.Server {
   return connect()
@@ -159,4 +159,27 @@ export async function invoke(
 
     throw e
   }
+}
+
+export async function workTests(args: {deflakeLimit: number, testNames: string[], sessionId: string }, rerun = true) : Promise<WorkTestsResult> {
+  const response = (await invoke(Zen.config.lambdaNames.workTests, args)) as WorkTestsResult
+  const timeoutTests = args.testNames.filter((test) => {
+    const results = response.results[test]
+    const result = results.at(-1)
+    
+    return result?.error?.includes('Lambda Timeout')
+  })
+  
+  // If there are timeouts, then keep calling workTests again with the unresolved tests
+  if (timeoutTests.length > 0 && rerun) {
+    console.log("RERUNNING DUE TO LAMBDA TIMEOUT", timeoutTests)
+    await timeout(30_000)
+    // We don't want this going on endlessly, because there are other errors we may want to do work
+    const newResponse = await workTests({ ...args, testNames: timeoutTests }, false)
+    timeoutTests.forEach((test) => {
+      response.results[test] = [...response.results[test], ...newResponse.results[test]]
+    })
+  }
+  
+  return response
 }
