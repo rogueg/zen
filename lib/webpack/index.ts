@@ -52,7 +52,7 @@ module.exports = class WebpackAdapter extends EventEmitter {
       })
     )
 
-    config.plugins.push(new webpack.NamedModulesPlugin())
+    config.optimization = Object.assign(config.optimization || {}, { moduleIds: "named" })
     this.compiler = webpack(config)
 
     this.compiler.hooks.invalid.tap('Zen', () =>
@@ -82,7 +82,7 @@ module.exports = class WebpackAdapter extends EventEmitter {
           return reject(error)
         } else if (stats?.hasErrors()) {
           const info = stats.toJson()
-          return reject(new Error(info.errors.join('\n')))
+          return reject(new Error(info.errors?.join('\n')))
         }
 
         resolve(stats)
@@ -92,9 +92,10 @@ module.exports = class WebpackAdapter extends EventEmitter {
 
   startDevServer(server: Server) {
     const devServer = new WebpackDevServer(this.compiler, {
-      stats: { errorDetails: true },
+      devMiddleware: {
+        stats: { errorDetails: true },
+      },
       hot: true,
-      inline: false,
     })
 
     // @ts-expect-error app does exist in this version of dev server
